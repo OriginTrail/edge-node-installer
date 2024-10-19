@@ -80,7 +80,7 @@ echo "alias otnode-config='nano ~/ot-node/.origintrail_noderc'" >> ~/.bashrc
     mysql -u root -e "flush privileges;"
     sed -i 's|max_binlog_size|#max_binlog_size|' /etc/mysql/mysql.conf.d/mysqld.cnf
     echo "disable_log_bin"
-    echo -e "disable_log_bin\nwait_timeout = 31536000\ninteractive_timeout = 31536000" >> /etc/mysql/mysql.conf.d/mysqld.cnf
+    echo -e "log_bin = 0\nwait_timeout = 31536000\ninteractive_timeout = 31536000" >> /etc/mysql/mysql.conf.d/mysqld.cnf
     echo "REPOSITORY_PASSWORD=otnodedb" >> /root/ot-node/current/.env
     echo "NODE_ENV=testnet" >> /root/ot-node/current/.env
     cd /root/ot-node/current
