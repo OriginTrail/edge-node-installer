@@ -35,11 +35,11 @@ echo "alias otnode-config='nano ~/ot-node/.origintrail_noderc'" >> ~/.bashrc
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
     # This loads nvm bash_completion
     [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-    nvm install 20 > /dev/null 2>&1
-    nvm use 20 > /dev/null 2>&1
+    nvm install 20.18 > /dev/null 2>&1
+    nvm use 20.18 > /dev/null 2>&1
 
     # Set nodejs v20.18.0 as default and link node to /usr/bin/
-    nvm alias default 20 > /dev/null 2>&1
+    nvm alias default 20.18 > /dev/null 2>&1
     sudo ln -s $(which node) /usr/bin/ > /dev/null 2>&1
     sudo ln -s $(which npm) /usr/bin/ > /dev/null 2>&1
 
@@ -99,9 +99,9 @@ echo "alias otnode-config='nano ~/ot-node/.origintrail_noderc'" >> ~/.bashrc
 
 # Export server IP
 SERVER_IP=$(hostname -I | awk '{print $1}')
-# Ensure the service uses Node.js version 22 (NVM already installed in the script above)
-nvm install 22
-nvm use 22
+# Ensure the service uses Node.js version 22.10 (NVM already installed in the script above)
+nvm install 22.10
+nvm use 22.10
 
 #Deploy Redis
 sudo apt update
@@ -168,7 +168,7 @@ UI_SSL=false
 EOL
 
 # Install dependencies
-nvm exec 22 npm install
+nvm exec 22.10 npm install
 
 # Setup database
 npm install
@@ -209,7 +209,7 @@ UI_SSL=false
 EOL
 
 # Install dependencies
-nvm exec 22 npm install
+nvm exec 22.10 npm install
 
 # Setup database
 npm install
@@ -239,8 +239,8 @@ BASE_URL=http://$SERVER_IP
 EOL
 
 # Build the UI
-nvm exec 22 npm install
-nvm exec 22 npm run build
+nvm exec 22.10 npm install
+nvm exec 22.10 npm run build
 
 # Install and configure NGINX
 sudo apt update
@@ -287,7 +287,7 @@ npx sequelize-cli db:migrate
 
 
 # Install dependencies
-nvm exec 22 npm install
+nvm exec 22.10 npm install
 
 
 
