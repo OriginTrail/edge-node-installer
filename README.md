@@ -1,17 +1,8 @@
 Edge Node v1.0.1 Installation
 
-Welcome to the Private Beta of DKG Edge Node! 🚀
+Welcome to the release of the DKG Edge Node Installer! 🚀
 
-Thank you for being an early adopter of our Edge node. This private beta release allows you to test and provide valuable feedback. Your input will help shape the future of the Edge node. Please report any bugs 🐛 or suggestions!
-
-## Table of Contents# Edge Node v1.0.1 Installation
-
-
-
-
-
----
-
+Thank you for being an early adopter of our Edge Node Installer. This private beta release provides you with the first official installer to easily set up the Edge Node on your system. By testing this installer and providing feedback, you play a crucial role in improving the setup process. Your insights will help us refine the experience. Please report any bugs 🐛 or suggestions!
 
 
 ## Prerequisites
@@ -22,7 +13,7 @@ Before installing, ensure your system meets the following requirements:
 
 
 
-### System Requirements (Mac & Linux)
+### System Requirements (Linux)
 
 
 
@@ -32,7 +23,7 @@ Before installing, ensure your system meets the following requirements:
 
 - **CPU**: 4 Cores
 
-- **Storage**: At least 2 GB (Mac) / 60 GB (Linux)
+- **Storage**: At least 60 GB (Linux)
 
 - **Network**: Stable internet connection
 
@@ -40,20 +31,9 @@ Before installing, ensure your system meets the following requirements:
 
 ### Software Dependencies
 
-
-
 Ensure the following services are installed:
 
-
-
 - Git
-
-- MySQL 8
-
-- Redis
-
-- Node.js v22.4.0
-
 
 
 # Edge Node Installer
@@ -62,7 +42,7 @@ Ensure the following services are installed:
 To begin, copy the following code:
 
  ```bash
-git clone https://github.com/BogBogdan/edge-node-installer
+git clone https://github.com/OriginTrail/edge-node-installer
 ```
 
 
@@ -104,4 +84,4 @@ The default login credentials are:
 - **Username:** my_edge_node
 - **Password:** edge_node_pass
 
-**Important:** It is highly recommended to change the default credentials. To do this, directly modif
+**Important:** It is highly recommended to change the default credentials. 
