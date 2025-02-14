@@ -1,11 +1,10 @@
 Edge Node v1.0.1 Installation
 
-Welcome to the release of the DKG Edge Node Installer! 🚀
-
-Thank you for being an early adopter of our Edge Node Installer. This private beta release provides you with the first official installer to easily set up the Edge Node on your system. By testing this installer and providing feedback, you play a crucial role in improving the setup process. Your insights will help us refine the experience. Please report any bugs 🐛 or suggestions!
-
+This installer provides an easy way to set up and run a DKG Edge Node on your system. 
+By testing this installer and sharing your feedback, you help us refine the setup process and improve the overall experience. If you encounter any issues or have suggestions, please let us know! 🐛
 For detailed instructions on setting up the DKG Edge Node in an automated environment on Ubuntu, check out the official documentation [here](https://docs.origintrail.io/build-with-dkg/dkg-edge-node/run-an-edge-node/automated-environment-setup-ubuntu).
 
+For more details on the DKG Edge Node, visit the official documentation [here](https://docs.origintrail.io/build-with-dkg/dkg-edge-node).
 ## Prerequisites
 
 Before installing, ensure your system meets the following requirements:
