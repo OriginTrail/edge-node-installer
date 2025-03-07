@@ -38,9 +38,9 @@ for SERVICE in "${SERVICES[@]}"; do
     
     echo -ne "\r$SERVICE ... "
     if [[ "$STATUS" == "active" ]]; then
-        echo -e "${GREEN}active\e${ENDCOLOR}" 
+        echo -e "${GREEN}active${ENDCOLOR}" 
     else
-        echo -e "${RED}inactive\e${NOCOLOR}"
+        echo -e "${RED}inactive${ENDCOLOR}"
     fi
 done
 
