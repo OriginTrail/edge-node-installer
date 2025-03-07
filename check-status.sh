@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Remote server details
 REMOTE_USER="root"
@@ -21,8 +21,8 @@ animate_dots() {
         echo -ne "\r$2 $dots"
         sleep $delay
     done
-}
 
+}
 echo -e "Checking services on $REMOTE_HOST...\n"
 
 for SERVICE in "${SERVICES[@]}"; do
@@ -38,9 +38,9 @@ for SERVICE in "${SERVICES[@]}"; do
     
     echo -ne "\r$SERVICE ... "
     if [[ "$STATUS" == "active" ]]; then
-        print "${GREEN}active\e${ENDCOLOR}" 
+        echo -e "${GREEN}active\e${ENDCOLOR}" 
     else
-        print "${RED}inactive\e${NOCOLOR}"
+        echo -e "${RED}inactive\e${NOCOLOR}"
     fi
 done
 
