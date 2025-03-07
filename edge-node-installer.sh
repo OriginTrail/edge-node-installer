@@ -33,6 +33,7 @@ if [[ -n "$REPOSITORY_USER" && -n "$REPOSITORY_AUTH" ]]; then
   done
 fi
 
+
 # Export server IP
 SERVER_IP=$(hostname -I | awk '{print $1}')
 
@@ -274,7 +275,8 @@ check_folder() {
 echo "Setting up Authentication Service..."
 
 if check_folder "/root/edge-node-auth-service"; then
-    git clone $repos["edge_node_auth_service"] /root/edge-node-auth-service
+
+    git clone "${repos[edge_node_auth_service]}" /root/edge-node-auth-service
     cd /root/edge-node-auth-service
     git checkout main
 
@@ -320,7 +322,7 @@ fi
 echo "Setting up Backend Service..."
 
 if check_folder "/root/edge-node-backend"; then
-    git clone $repos["edge_node_api"] /root/edge-node-backend
+    git clone "${repos[edge_node_api]}" /root/edge-node-backend
     cd /root/edge-node-backend
     git checkout main
 
@@ -355,7 +357,7 @@ fi
 echo "Setting up Edge Node UI..."
 
 if check_folder "/var/www/edge-node-ui"; then
-    git clone $repos["edge_node_interface"] /var/www/edge-node-ui
+    git clone "${repos["edge_node_interface"]}" /var/www/edge-node-ui
     cd /var/www/edge-node-ui
     git checkout main
 
@@ -398,7 +400,7 @@ fi
 echo "Setting up dRAG API Service..."
 
 if check_folder "/root/drag-api"; then
-    git clone $edge_node_drag /root/drag-api
+    git clone "${repos[edge_node_drag]}" /root/drag-api
     cd /root/drag-api
     git checkout main
 
@@ -428,7 +430,7 @@ fi
 echo "Setting up KA Mining API Service..."
 
 if check_folder "/root/ka-mining-api"; then
-    git clone $repos["edge_node_knowledge_mining"] /root/ka-mining-api
+    git clone "${repos[edge_node_knowledge_mining]}" /root/ka-mining-api
     cd /root/ka-mining-api
     git checkout main
 
