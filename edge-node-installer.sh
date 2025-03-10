@@ -94,155 +94,6 @@ fi
 
 OTNODE_DIR="/root/ot-node"
 
-#adding aliases to .bashrc:
-echo "alias otnode-restart='systemctl restart otnode.service'" >> ~/.bashrc
-echo "alias otnode-stop='systemctl stop otnode.service'" >> ~/.bashrc
-echo "alias otnode-start='systemctl start otnode.service'" >> ~/.bashrc
-echo "alias otnode-logs='journalctl -u otnode --output cat -f'" >> ~/.bashrc
-echo "alias otnode-config='nano ~/ot-node/.origintrail_noderc'" >> ~/.bashrc
-echo "alias edge-node-restart='systemctl restart auth-service && systemctl restart edge-node-backend && systemctl restart ka-mining-api && systemctl restart airflow-scheduler && systemctl restart drag-api'" >> ~/.bashrc
-
-# Installing prereqs
-export DEBIAN_FRONTEND=noninteractive
-NODEJS_VER="20"
-rm -rf /var/lib/dpkg/lock-frontend
-apt update
-apt upgrade -y
-apt install unzip wget jq -y
-apt install default-jre -y
-apt install build-essential -y
-
-# Install nodejs v20.18.0 (via NVM).
-wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash > /dev/null 2>&1
-export NVM_DIR="$HOME/.nvm"
-# This loads nvm
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-# This loads nvm bash_completion
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-nvm install 20.18.2 > /dev/null 2>&1
-nvm use 20.18.2 > /dev/null 2>&1
-
-# Set nodejs v20.18.0 as default and link node to /usr/bin/
-nvm alias default 20.18.2 > /dev/null 2>&1
-sudo ln -s $(which node) /usr/bin/ > /dev/null 2>&1
-sudo ln -s $(which npm) /usr/bin/ > /dev/null 2>&1
-
-
-
-####### todo: Update ot-node branch
-####### todo: Replace add .env variables to .origintrail_noderc
-
-# Setting up node directory:
-        ARCHIVE_REPOSITORY_URL="github.com/OriginTrail/ot-node/archive"
-        BRANCH="v6/release/testnet"
-        BRANCH_DIR="/root/ot-node-6-release-testnet"
-        cd /root
-        wget https://$ARCHIVE_REPOSITORY_URL/$BRANCH.zip
-        unzip *.zip
-        rm *.zip
-        OTNODE_VERSION=$(jq -r '.version' $BRANCH_DIR/package.json)
-        mkdir $OTNODE_DIR
-        mkdir $OTNODE_DIR/$OTNODE_VERSION
-        mv $BRANCH_DIR/* $OTNODE_DIR/$OTNODE_VERSION/
-        OUTPUT=$(mv $BRANCH_DIR/.* $OTNODE_DIR/$OTNODE_VERSION/ 2>&1)
-        rm -rf $BRANCH_DIR
-        ln -sfn $OTNODE_DIR/$OTNODE_VERSION $OTNODE_DIR/current
-
-        # Ensure the directory exists
-        mkdir -p "$CONFIG_DIR"
-
-        cd /root/edge-node-installer
-        # Call the function to generate config
-        generate_engine_node_config "$CONFIG_DIR"
-        if [[ $? -eq 0 ]]; then
-            echo "✅ Blockchain config successfully generated at $CONFIG_DIR"
-        else
-            echo "❌ Blockchain config generation failed!"
-        fi
-        chmod 600 /root/ot-node/.origintrail_noderc
-        cp /root/ot-node/current/installer/data/otnode.service /lib/systemd/system/
-
-# Installing Blazegraph
-    wget -P $OTNODE_DIR https://github.com/blazegraph/database/releases/latest/download/blazegraph.jar
-    cp $OTNODE_DIR/current/installer/data/blazegraph.service /lib/systemd/system/
-
-
-#Setup MySql
-    apt install tcllib mysql-server -y
-    mysql -u root -p"$SQL_PASSWORD" -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '';"
-    mysql -u root -e "CREATE DATABASE operationaldb /*\!40100 DEFAULT CHARACTER SET utf8 */;"
-    mysql -u root -e "CREATE DATABASE \`edge-node-auth-service\`"
-    mysql -u root -e "CREATE DATABASE \`edge-node-backend\`;"
-    mysql -u root -e "CREATE DATABASE drag_logging;"
-    mysql -u root -e "CREATE DATABASE ka_mining_api_logging;"
-    mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'otnodedb';"
-    mysql -u root -e "flush privileges;"
-    sed -i 's|max_binlog_size|#max_binlog_size|' /etc/mysql/mysql.conf.d/mysqld.cnf
-    echo "disable_log_bin"
-    echo -e "disable_log_bin\nwait_timeout = 31536000\ninteractive_timeout = 31536000" >> /etc/mysql/mysql.conf.d/mysqld.cnf
-    echo "REPOSITORY_PASSWORD=otnodedb" >> /root/ot-node/current/.env
-    echo "NODE_ENV=testnet" >> /root/ot-node/current/.env
-    cd /root/ot-node/current
-    npm ci --omit=dev --ignore-scripts
-
-#Enable services
-    systemctl daemon-reload
-    systemctl enable mysql || true
-    systemctl status mysql --no-pager || true
-    systemctl enable blazegraph || true
-    systemctl start blazegraph || true
-    systemctl status blazegraph --no-pager || true
-    echo "✅ Blazegraph checked. Continuing execution..."
-    systemctl enable systemd-journald.service || true
-    systemctl restart systemd-journald.service || true
-    systemctl enable otnode || true
-
-# Ensure the service uses Node.js version 22 (NVM already installed in the script above)
-nvm install 22.9.0
-nvm use 22.9.0
-
-#Deploy Redis
-sudo apt update
-sudo apt install redis-server -y
-sudo systemctl enable redis-server
-sudo systemctl start redis-server
-
-
-# Install Python 3.11.7
-# Step 1: Update system and install dependencies
-sudo apt update
-sudo apt install -y make build-essential libssl-dev zlib1g-dev \
-libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm \
-libncurses5-dev libncursesw5-dev xz-utils tk-dev \
-libffi-dev liblzma-dev python3-openssl git \
-libmysqlclient-dev pkg-config python3-dev
-
-# Step 2: Install pyenv
-curl https://pyenv.run | bash
-
-# Step 3: Add pyenv to shell configuration files (.bashrc and .bash_profile)
-echo -e '\n# Pyenv setup\nexport PATH="$HOME/.pyenv/bin:$PATH"\neval "$(pyenv init --path)"\neval "$(pyenv init -)"\n' >> ~/.bashrc
-echo -e '\n# Pyenv setup\nexport PATH="$HOME/.pyenv/bin:$PATH"\neval "$(pyenv init --path)"\neval "$(pyenv init -)"\n' >> ~/.bash_profile
-
-# Step 4: Source shell configuration files
-source ~/.bashrc
-source ~/.bash_profile
-
-# Step 5: Ensure pyenv is loaded in the current shell
-export PATH="$HOME/.pyenv/bin:$PATH"
-eval "$(pyenv init --path)"
-eval "$(pyenv init -)"
-
-# Step 6: Install Python 3.11.7 and set it as global version
-pyenv install 3.11.7
-pyenv global 3.11.7
-
-# Step 7: Verify installation
-pyenv --version
-python --version
-
-
-# Function to check folder existence and prompt user
 check_folder() {
     if [ -d "$1" ]; then
         echo "Note: It is recommended to delete all directories created by any previous installer executions before running the DKG Edge Node installer. This helps to avoid potential conflicts and issues during the installation process."
@@ -260,18 +111,193 @@ check_folder() {
     return 0
 }
 
+create_env_file() {
+    cat <<EOL > $1/.env
+NODE_ENV=development
+DB_USERNAME=root
+DB_PASSWORD=otnodedb
+DB_DATABASE=$2
+DB_HOST=127.0.0.1
+DB_DIALECT=mysql
+PORT=$3
+UI_ENDPOINT=http://$SERVER_IP
+UI_SSL=false
+EOL
+}
+
+install_python() {
+    # Install Python 3.11.7
+    # Step 1: Update system and install dependencies
+    apt update
+    apt install -y make build-essential libssl-dev zlib1g-dev \
+    libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm \
+    libncurses5-dev libncursesw5-dev xz-utils tk-dev \
+    libffi-dev liblzma-dev python3-openssl git \
+    libmysqlclient-dev pkg-config python3-dev
+
+    # Step 2: Install pyenv
+    curl https://pyenv.run | bash
+
+    # Step 3: Add pyenv to shell configuration files (.bashrc and .bash_profile)
+    echo -e '\n# Pyenv setup\nexport PATH="$HOME/.pyenv/bin:$PATH"\neval "$(pyenv init --path)"\neval "$(pyenv init -)"\n' >> ~/.bashrc
+    echo -e '\n# Pyenv setup\nexport PATH="$HOME/.pyenv/bin:$PATH"\neval "$(pyenv init --path)"\neval "$(pyenv init -)"\n' >> ~/.bash_profile
+
+    # Step 4: Source shell configuration files
+    source ~/.bashrc
+    source ~/.bash_profile
+
+    # Step 5: Ensure pyenv is loaded in the current shell
+    export PATH="$HOME/.pyenv/bin:$PATH"
+    eval "$(pyenv init --path)"
+    eval "$(pyenv init -)"
+
+    # Step 6: Install Python 3.11.7 and set it as global version
+    pyenv install 3.11.7
+    pyenv global 3.11.7
+
+    # Step 7: Verify installation
+    pyenv --version
+    python --version
+}
+
+install_blazegraph() {
+    wget -P $OTNODE_DIR https://github.com/blazegraph/database/releases/latest/download/blazegraph.jar
+    cp $OTNODE_DIR/current/installer/data/blazegraph.service /lib/systemd/system/
+
+    systemctl daemon-reload
+    systemctl enable blazegraph || true
+    systemctl start blazegraph || true
+    systemctl status blazegraph --no-pager || true
+    echo "✅ Blazegraph checked. Continuing execution..."
+}
+
+install_mysql() {
+    apt install tcllib mysql-server -y
+    mysql -u root -p"$SQL_PASSWORD" -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '';"
+    mysql -u root -e "CREATE DATABASE operationaldb /*\!40100 DEFAULT CHARACTER SET utf8 */;"
+    mysql -u root -e "CREATE DATABASE \`edge-node-auth-service\`"
+    mysql -u root -e "CREATE DATABASE \`edge-node-backend\`;"
+    mysql -u root -e "CREATE DATABASE drag_logging;"
+    mysql -u root -e "CREATE DATABASE ka_mining_api_logging;"
+    mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'otnodedb';"
+    mysql -u root -e "flush privileges;"
+    sed -i 's|max_binlog_size|#max_binlog_size|' /etc/mysql/mysql.conf.d/mysqld.cnf
+    echo "disable_log_bin"
+    echo -e "disable_log_bin\nwait_timeout = 31536000\ninteractive_timeout = 31536000" >> /etc/mysql/mysql.conf.d/mysqld.cnf
+    echo "REPOSITORY_PASSWORD=otnodedb" >> /root/ot-node/current/.env
+    echo "NODE_ENV=testnet" >> /root/ot-node/current/.env
+    cd /root/ot-node/current
+    npm ci --omit=dev --ignore-scripts
+
+    systemctl daemon-reload
+    systemctl enable mysql || true
+    systemctl start mysql || true
+    systemctl status mysql --no-pager || true
+}
 
 
-# **************** Authentication Service Setup ****************
-echo "Setting up Authentication Service..."
+setup() {
+    #adding aliases to .bashrc:
+    echo "alias otnode-restart='systemctl restart otnode.service'" >> ~/.bashrc
+    echo "alias otnode-stop='systemctl stop otnode.service'" >> ~/.bashrc
+    echo "alias otnode-start='systemctl start otnode.service'" >> ~/.bashrc
+    echo "alias otnode-logs='journalctl -u otnode --output cat -f'" >> ~/.bashrc
+    echo "alias otnode-config='nano ~/ot-node/.origintrail_noderc'" >> ~/.bashrc
+    echo "alias edge-node-restart='systemctl restart auth-service && systemctl restart edge-node-backend && systemctl restart ka-mining-api && systemctl restart airflow-scheduler && systemctl restart drag-api'" >> ~/.bashrc
 
-if check_folder "/root/edge-node-auth-service"; then
-    git clone $edge_node_auth_service /root/edge-node-auth-service
-    cd /root/edge-node-auth-service
-    git checkout main
+    # Installing prereqs
+    export DEBIAN_FRONTEND=noninteractive
+    NODEJS_VER="20"
+    rm -rf /var/lib/dpkg/lock-frontend
 
-    # Create the .env file with required variables
-    cat <<EOL > /root/edge-node-auth-service/.env
+    apt update
+    apt upgrade -y
+    apt install -y make build-essential libssl-dev zlib1g-dev \
+    libbz2-dev libreadline-dev libsqlite3-dev wget unzip curl llvm \
+    jq libncurses5-dev libncursesw5-dev xz-utils tk-dev \
+    libffi-dev liblzma-dev python3-openssl git \
+    libmysqlclient-dev pkg-config python3-dev
+    
+    # Install redis
+    apt install redis-server -y
+    systemctl enable redis-server
+    systemctl start redis-server
+
+    # Install nodejs v20.18.0 (via NVM).
+    wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash > /dev/null 2>&1
+    export NVM_DIR="$HOME/.nvm"
+    # This loads nvm
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    # This loads nvm bash_completion
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+    nvm install 22.9.0 > /dev/null 2>&1
+    nvm install 20.18.2 > /dev/null 2>&1
+
+    nvm use 20.18.2 > /dev/null 2>&1
+     # Set nodejs v20.18.0 as default and link node to /usr/bin/
+    nvm alias default 20.18.2 > /dev/null 2>&1
+   
+    ln -s $(which node) /usr/bin/ > /dev/null 2>&1
+    ln -s $(which npm) /usr/bin/ > /dev/null 2>&1
+
+    install_python
+    install_blazegraph
+    install_mysql
+
+    systemctl enable systemd-journald.service || true
+    systemctl restart systemd-journald.service || true
+}
+
+
+####### todo: Update ot-node branch
+####### todo: Replace add .env variables to .origintrail_noderc
+
+install_ot_node() {
+    # Setting up node directory:s
+    ARCHIVE_REPOSITORY_URL="github.com/OriginTrail/ot-node/archive"
+    BRANCH="v6/release/testnet"
+    BRANCH_DIR="/root/ot-node-6-release-testnet"
+    cd /root
+    wget https://$ARCHIVE_REPOSITORY_URL/$BRANCH.zip
+    unzip *.zip
+    rm *.zip
+    OTNODE_VERSION=$(jq -r '.version' $BRANCH_DIR/package.json)
+    mkdir $OTNODE_DIR
+    mkdir $OTNODE_DIR/$OTNODE_VERSION
+    mv $BRANCH_DIR/* $OTNODE_DIR/$OTNODE_VERSION/
+    OUTPUT=$(mv $BRANCH_DIR/.* $OTNODE_DIR/$OTNODE_VERSION/ 2>&1)
+    rm -rf $BRANCH_DIR
+    ln -sfn $OTNODE_DIR/$OTNODE_VERSION $OTNODE_DIR/current
+
+    # Ensure the directory exists
+    mkdir -p "$CONFIG_DIR"
+
+    cd /root/edge-node-installer
+    # Call the function to generate config
+    generate_engine_node_config "$CONFIG_DIR"
+    if [[ $? -eq 0 ]]; then
+        echo "✅ Blockchain config successfully generated at $CONFIG_DIR"
+    else
+        echo "❌ Blockchain config generation failed!"
+    fi
+    chmod 600 /root/ot-node/.origintrail_noderc
+    cp /root/ot-node/current/installer/data/otnode.service /lib/systemd/system/
+
+    systemctl enable otnode || true
+}
+
+setup_auth_service() {
+    echo "Setting up Authentication Service..."
+    if check_folder "/root/edge-node-auth-service"; then
+        git clone $edge_node_auth_service /root/edge-node-auth-service
+        cd /root/edge-node-auth-service
+        git checkout main
+
+
+        # Create the .env file with required variables
+        create_env_file
+        cat <<EOL > /root/edge-node-auth-service/.env
 SECRET="$(openssl rand -hex 64)"
 JWT_SECRET="$(openssl rand -hex 64)"
 NODE_ENV=development
@@ -285,39 +311,60 @@ UI_ENDPOINT=http://$SERVER_IP
 UI_SSL=false
 EOL
 
-    # Install dependencies
-    nvm exec 22.9.0 npm install
+        # Install dependencies
+        nvm exec 22.9.0 npm install
 
-    # Setup database
-    yes | npx sequelize-cli db:migrate
-    yes | npx sequelize-cli db:seed:all
+        # Setup database
+        yes | npx sequelize-cli db:migrate
+        yes | npx sequelize-cli db:seed:all
 
-    SQL_FILE="/root/edge-node-auth-service/UserConfig.sql"
-    TEMP_SQL_FILE="/root/edge-node-auth-service/UserConfig_temp.sql"
+        SQL_FILE="/root/edge-node-auth-service/UserConfig.sql"
+        TEMP_SQL_FILE="/root/edge-node-auth-service/UserConfig_temp.sql"
 
-    # Replace 'localhost' with SERVER_IP in SQL file
-    sed "s/localhost/$SERVER_IP/g" "$SQL_FILE" > "$TEMP_SQL_FILE"
+        # Replace 'localhost' with SERVER_IP in SQL file
+        sed "s/localhost/$SERVER_IP/g" "$SQL_FILE" > "$TEMP_SQL_FILE"
 
-    # Execute SQL file on MySQL database
-    mysql -u "root" -p"otnodedb" "edge-node-auth-service" < "$TEMP_SQL_FILE"
+        # Execute SQL file on MySQL database
+        mysql -u "root" -p"otnodedb" "edge-node-auth-service" < "$TEMP_SQL_FILE"
 
-    # Clean up temp file
-    rm "$TEMP_SQL_FILE"
+        # Clean up temp file
+        rm "$TEMP_SQL_FILE"
 
-    echo "User config updated successfully."
-fi
+        echo "User config updated successfully."
+    fi;
 
+    cat <<EOL > /etc/systemd/system/auth-service.service
+[Unit]
+Description=Edge Node Authentication Service
+After=network.target
 
-# **************** EDGE NODE BACKEND SETUP ****************
-echo "Setting up Backend Service..."
+[Service]
+ExecStart=/root/.nvm/versions/node/v22.9.0/bin/node /root/edge-node-auth-service/index.js
+WorkingDirectory=/root/edge-node-auth-service
+EnvironmentFile=/root/edge-node-auth-service/.env
+Restart=always
+User=root
+Group=root
 
-if check_folder "/root/edge-node-backend"; then
-    git clone $edge_node_api /root/edge-node-backend
-    cd /root/edge-node-backend
-    git checkout main
+[Install]
+WantedBy=multi-user.target
+EOL
 
-    # Create the .env file with required variables
-    cat <<EOL > /root/edge-node-backend/.env
+    systemctl daemon-reload
+    systemctl enable auth-service
+    systemctl start auth-service
+
+}
+
+setup_edge_node_api() {
+    echo "Setting up Backend Service..."
+    if check_folder "/root/edge-node-backend"; then
+        git clone $edge_node_api /root/edge-node-backend
+        cd /root/edge-node-backend
+        git checkout main
+
+        # Create the .env file with required variables
+        cat <<EOL > /root/edge-node-backend/.env
 NODE_ENV=development
 DB_USERNAME=root
 DB_PASSWORD=otnodedb
@@ -335,24 +382,46 @@ RUNTIME_NODE_OPERATIONAL_DB_DIALECT=mysql
 UI_SSL=false
 EOL
 
-    # Install dependencies
-    nvm exec 20.18.2 npm install
+        # Install dependencies
+        nvm exec 20.18.2 npm install
 
-    # Setup database
-    npx sequelize-cli db:migrate
-fi
+        # Setup database
+        npx sequelize-cli db:migrate
+    fi
 
 
-# **************** EDGE NODE UI SETUP ****************
-echo "Setting up Edge Node UI..."
+    cat <<EOL > /etc/systemd/system/edge-node-backend.service
+[Unit]
+Description=Edge Node Backend Service
+After=network.target
 
-if check_folder "/var/www/edge-node-ui"; then
-    git clone $edge_node_interface /var/www/edge-node-ui
-    cd /var/www/edge-node-ui
-    git checkout main
+[Service]
+ExecStart=/root/.nvm/versions/node/v22.9.0/bin/node /root/edge-node-backend/app.js
+WorkingDirectory=/root/edge-node-backend/
+EnvironmentFile=/root/edge-node-backend/.env
+Restart=always
+User=root
+Group=root
 
-    # Create the .env file with required variables
-    cat <<EOL > /var/www/edge-node-ui/.env
+[Install]
+WantedBy=multi-user.target
+EOL
+
+    systemctl daemon-reload
+    systemctl enable edge-node-backend.service
+    systemctl start edge-node-backend.service
+}
+
+setup_edge_node_ui() {
+    echo "Setting up Edge Node UI..."
+
+    if check_folder "/var/www/edge-node-ui"; then
+        git clone $edge_node_interface /var/www/edge-node-ui
+        cd /var/www/edge-node-ui
+        git checkout main
+
+        # Create the .env file with required variables
+        cat <<EOL > /var/www/edge-node-ui/.env
 VITE_APP_URL="http://$SERVER_IP"
 VITE_APP_NAME="Edge Node"
 VITE_AUTH_ENABLED=true
@@ -363,39 +432,38 @@ VITE_APP_ID=edge_node
 BASE_URL=http://$SERVER_IP
 EOL
 
-    # Build the UI
-    nvm exec 22.9.0 npm install
-    nvm exec 22.9.0 npm run build
+        # Build the UI
+        nvm exec 22.9.0 npm install
+        nvm exec 22.9.0 npm run build
 
-    # Install and configure NGINX
-    sudo apt update
-    sudo apt install nginx -y
-    sudo systemctl start nginx
-    sudo systemctl enable nginx
+        # Install and configure NGINX
+        apt install nginx -y
+        systemctl start nginx
+        systemctl enable nginx
 
-    # Creating a basic Nginx config for serving the UI on port 80
-    NGINX_CONF="/etc/nginx/sites-available/default"
-    cp $NGINX_CONF ${NGINX_CONF}.bak
+        # Creating a basic Nginx config for serving the UI on port 80
+        NGINX_CONF="/etc/nginx/sites-available/default"
+        cp $NGINX_CONF ${NGINX_CONF}.bak
 
-    # Modify the root directive to point to the new directory
-    sed -i 's|root /var/www/html;|root /var/www/edge-node-ui/dist;|' $NGINX_CONF
-    sed -i 's|try_files $uri $uri/ =404;|try_files $uri $uri/ /index.html =404;|' $NGINX_CONF
+        # Modify the root directive to point to the new directory
+        sed -i 's|root /var/www/html;|root /var/www/edge-node-ui/dist;|' $NGINX_CONF
+        sed -i 's|try_files $uri $uri/ =404;|try_files $uri $uri/ /index.html =404;|' $NGINX_CONF
 
-    # Enable and restart Nginx with the new configuration
-    nginx -t && systemctl restart nginx
-fi
+        # Enable and restart Nginx with the new configuration
+        nginx -t && systemctl restart nginx
+    fi
+}
 
+setup_drag_api() {
+    echo "Setting up dRAG API Service..."
 
-# **************** DRAG API SETUP ****************
-echo "Setting up dRAG API Service..."
+    if check_folder "/root/drag-api"; then
+        git clone $edge_node_drag /root/drag-api
+        cd /root/drag-api
+        git checkout main
 
-if check_folder "/root/drag-api"; then
-    git clone $edge_node_drag /root/drag-api
-    cd /root/drag-api
-    git checkout main
-
-    # Create the .env file with required variables
-    cat <<EOL > /root/drag-api/.env
+        # Create the .env file with required variables
+        cat <<EOL > /root/drag-api/.env
 SERVER_PORT=5002
 NODE_ENV=production
 DB_USER="root"
@@ -408,28 +476,50 @@ UI_ENDPOINT="http://$SERVER_IP"
 OPENAI_API_KEY="$OPENAI_API_KEY"
 EOL
 
-    # Install dependencies
-    nvm exec 22.9.0 npm install
+        # Install dependencies
+        nvm exec 22.9.0 npm install
 
-    # Exec migrations
-    npx sequelize-cli db:migrate
-fi
+        # Exec migrations
+        npx sequelize-cli db:migrate
+    fi
+
+    cat <<EOL > /etc/systemd/system/drag-api.service
+[Unit]
+Description=dRAG API Service
+After=network.target
 
 
-# **************** KA MINING API SETUP ****************
-echo "Setting up KA Mining API Service..."
+[Service]
+ExecStart=/root/.nvm/versions/node/v22.9.0/bin/node /root/drag-api/server.js
+WorkingDirectory=/root/drag-api
+EnvironmentFile=/root/drag-api/.env
+Restart=always
+User=root
+Group=root
 
-if check_folder "/root/ka-mining-api"; then
-    git clone $edge_node_knowledge_mining /root/ka-mining-api
-    cd /root/ka-mining-api
-    git checkout main
+[Install]
+WantedBy=multi-user.target
+EOL
 
-    python3.11 -m venv .venv
-    source .venv/bin/activate
-    pip install -r requirements.txt
+    systemctl enable drag-api
+    systemctl start drag-api
 
-    # Create the .env file with required variables
-    cat <<EOL > /root/ka-mining-api/.env
+}
+
+setup_ka_minging_api() {
+    echo "Setting up KA Mining API Service..."
+
+    if check_folder "/root/ka-mining-api"; then
+        git clone $edge_node_knowledge_mining /root/ka-mining-api
+        cd /root/ka-mining-api
+        git checkout main
+
+        python3.11 -m venv .venv
+        source .venv/bin/activate
+        pip install -r requirements.txt
+
+        # Create the .env file with required variables
+        cat <<EOL > /root/ka-mining-api/.env
 PORT=5005
 PYTHON_ENV="STAGING"
 DB_USERNAME="root"
@@ -449,153 +539,9 @@ MILVUS_USERNAME="$MILVUS_USERNAME"
 MILVUS_PASSWORD="$MILVUS_PASSWORD"
 MILVUS_URI="$MILVUS_URI"
 EOL
-fi
+    fi
 
-
-# **************** AIRFLOW SETUP ****************
-echo "Setting up Airflow Service..."
-
-cd /root/ka-mining-api/
-
-# Initialize the Airflow database
-airflow db init
-
-# Create Airflow admin user (TEMPORARY for internal use)
-airflow users create \
-    --role Admin \
-    --username airflow-administrator \
-    --email admin@example.com \
-    --firstname Administrator \
-    --lastname User \
-    --password admin_password
-
-# Configure Airflow settings in the airflow.cfg file
-sed -i \
--e 's|^dags_folder *=.*|dags_folder = /root/ka-mining-api/dags|' \
--e 's|^parallelism *=.*|parallelism = 32|' \
--e 's|^max_active_tasks_per_dag *=.*|max_active_tasks_per_dag = 16|' \
--e 's|^max_active_runs_per_dag *=.*|max_active_runs_per_dag = 16|' \
--e 's|^enable_xcom_pickling *=.*|enable_xcom_pickling = True|' \
--e 's|^load_examples *=.*|load_examples = False|' \
-/root/airflow/airflow.cfg
-
-
-
-
-# AIRFLOW WEBSERVER sytemctl setup
-cat <<EOL > /etc/systemd/system/airflow-webserver.service
-[Unit]
-Description=Airflow Webserver
-After=network.target
-
-[Service]
-ExecStart=/root/ka-mining-api/.venv/bin/airflow webserver --port 8008
-WorkingDirectory=/root/ka-mining-api
-EnvironmentFile=/root/ka-mining-api/.env
-Restart=always
-User=root
-Group=root
-
-[Install]
-WantedBy=multi-user.target
-EOL
-
-# Unpause DAGS
-for dag_file in dags/*.py; do
-    dag_name=$(basename "$dag_file" .py)
-    /root/ka-mining-api/.venv/bin/airflow dags unpause "$dag_name"
-done
-
-# Enable and start the service
-systemctl daemon-reload
-systemctl enable airflow-webserver
-systemctl start airflow-webserver
-
-
-
-
-
-# ---------------------- DEPLOY ALL SYSTEMCTL SERVICES ---------------------- #
-
-# AUTHENTICATION SERVICE sytemctl setup
-cat <<EOL > /etc/systemd/system/auth-service.service
-[Unit]
-Description=Edge Node Authentication Service
-After=network.target
-
-[Service]
-ExecStart=/root/.nvm/versions/node/v22.9.0/bin/node /root/edge-node-auth-service/index.js
-WorkingDirectory=/root/edge-node-auth-service
-EnvironmentFile=/root/edge-node-auth-service/.env
-Restart=always
-User=root
-Group=root
-
-[Install]
-WantedBy=multi-user.target
-EOL
-
-# Enable and start the service
-systemctl daemon-reload
-systemctl enable auth-service
-systemctl start auth-service
-
-
-
-
-# BACKEND SERVICE sytemctl setup
-cat <<EOL > /etc/systemd/system/edge-node-backend.service
-[Unit]
-Description=Edge Node Backend Service
-After=network.target
-
-[Service]
-ExecStart=/root/.nvm/versions/node/v22.9.0/bin/node /root/edge-node-backend/app.js
-WorkingDirectory=/root/edge-node-backend/
-EnvironmentFile=/root/edge-node-backend/.env
-Restart=always
-User=root
-Group=root
-
-[Install]
-WantedBy=multi-user.target
-EOL
-
-# Enable and start the service
-systemctl daemon-reload
-systemctl enable edge-node-backend.service
-systemctl start edge-node-backend.service
-
-
-
-# AIRFLOW SCHEDULER sytemctl setup
-cat <<EOL > /etc/systemd/system/airflow-scheduler.service
-[Unit]
-Description=Airflow Scheduler
-After=network.target
-
-[Service]
-ExecStart=/root/ka-mining-api/.venv/bin/airflow scheduler
-WorkingDirectory=/root/ka-mining-api
-Environment="PATH=/root/ka-mining-api/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-Restart=always
-User=root
-Group=root
-
-[Install]
-WantedBy=multi-user.target
-EOL
-
-
-# Enable and start the service
-systemctl daemon-reload
-systemctl enable airflow-scheduler
-systemctl start airflow-scheduler
-
-
-
-# KA MINING sytemctl setup
-cat <<EOL > /etc/systemd/system/ka-mining-api.service
+    cat <<EOL > /etc/systemd/system/ka-mining-api.service
 [Unit]
 Description=KA Mining API Service
 After=network.target
@@ -612,25 +558,49 @@ Group=root
 WantedBy=multi-user.target
 EOL
 
-# Enable and start the service
-systemctl daemon-reload
-systemctl enable ka-mining-api
-systemctl start ka-mining-api
+    systemctl daemon-reload
+    systemctl enable ka-mining-api
+    systemctl start ka-mining-api
+}
 
 
+setup_airflow_service() {
+    echo "Setting up Airflow Service..."
 
+    cd /root/ka-mining-api/
 
-# DRAG API sytemctl setup
-cat <<EOL > /etc/systemd/system/drag-api.service
+    # Initialize the Airflow database
+    airflow db init
+
+    # Create Airflow admin user (TEMPORARY for internal use)
+    airflow users create \
+        --role Admin \
+        --username airflow-administrator \
+        --email admin@example.com \
+        --firstname Administrator \
+        --lastname User \
+        --password admin_password
+
+    # Configure Airflow settings in the airflow.cfg file
+    sed -i \
+    -e 's|^dags_folder *=.*|dags_folder = /root/ka-mining-api/dags|' \
+    -e 's|^parallelism *=.*|parallelism = 32|' \
+    -e 's|^max_active_tasks_per_dag *=.*|max_active_tasks_per_dag = 16|' \
+    -e 's|^max_active_runs_per_dag *=.*|max_active_runs_per_dag = 16|' \
+    -e 's|^enable_xcom_pickling *=.*|enable_xcom_pickling = True|' \
+    -e 's|^load_examples *=.*|load_examples = False|' \
+    /root/airflow/airflow.cfg
+
+    # AIRFLOW WEBSERVER sytemctl setup
+    cat <<EOL > /etc/systemd/system/airflow-webserver.service
 [Unit]
-Description=dRAG API Service
+Description=Airflow Webserver
 After=network.target
 
-
 [Service]
-ExecStart=/root/.nvm/versions/node/v22.9.0/bin/node /root/drag-api/server.js
-WorkingDirectory=/root/drag-api
-EnvironmentFile=/root/drag-api/.env
+ExecStart=/root/ka-mining-api/.venv/bin/airflow webserver --port 8008
+WorkingDirectory=/root/ka-mining-api
+EnvironmentFile=/root/ka-mining-api/.env
 Restart=always
 User=root
 Group=root
@@ -639,32 +609,80 @@ Group=root
 WantedBy=multi-user.target
 EOL
 
-# Enable and start the service
-systemctl daemon-reload
-systemctl enable drag-api
-systemctl start drag-api
+    # Unpause DAGS
+    for dag_file in dags/*.py; do
+        dag_name=$(basename "$dag_file" .py)
+        /root/ka-mining-api/.venv/bin/airflow dags unpause "$dag_name"
+    done
+
+    # Enable and start the service
+    systemctl daemon-reload
+    systemctl enable airflow-webserver
+    systemctl start airflow-webserver
 
 
-# ------- CHECK STATUSES OF ALL SERVICES -------
-systemctl status auth-service.service --no-pager || true
-systemctl status ka-mining-api.service --no-pager || true
-systemctl status airflow-scheduler.service --no-pager || true
-systemctl status airflow-webserver.service --no-pager || true
-systemctl status drag-api.service --no-pager || true
-systemctl status otnode --no-pager || true
-source ~/.bashrc
-echo "======== RESTARTING SERVICES ==========="
-sleep 10
-systemctl is-enabled otnode.service
-systemctl is-enabled ka-mining-api
-systemctl is-enabled airflow-scheduler
-systemctl is-enabled edge-node-backend
-systemctl is-enabled auth-service
+    cat <<EOL > /etc/systemd/system/airflow-scheduler.service
+[Unit]
+Description=Airflow Scheduler
+After=network.target
 
-systemctl restart otnode.service
-systemctl restart ka-mining-api
-systemctl restart airflow-scheduler
-systemctl restart edge-node-backend
-systemctl restart auth-service
+[Service]
+ExecStart=/root/ka-mining-api/.venv/bin/airflow scheduler
+WorkingDirectory=/root/ka-mining-api
+Environment="PATH=/root/ka-mining-api/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Restart=always
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
+EOL
+
+    systemctl daemon-reload
+    systemctl enable airflow-scheduler
+    systemctl start airflow-scheduler
+    
+}
+
+check_service_status() {
+    # ------- CHECK STATUSES OF ALL SERVICES -------
+    systemctl status auth-service.service --no-pager || true
+    systemctl status ka-mining-api.service --no-pager || true
+    systemctl status airflow-webserver --no-pager || true
+    systemctl status airflow-scheduler --no-pager || true
+    systemctl status drag-api.service --no-pager || true
+    systemctl status otnode --no-pager || true
+    source ~/.bashrc
+    echo "======== RESTARTING SERVICES ==========="
+    sleep 10
+    systemctl is-enabled otnode.service
+    systemctl is-enabled ka-mining-api
+    systemctl is-enabled airflow-scheduler
+    systemctl is-enabled airflow-webserver
+    systemctl is-enabled edge-node-backend
+    systemctl is-enabled auth-service
+
+    systemctl restart otnode.service
+    systemctl restart ka-mining-api
+    systemctl restart airflow-scheduler
+    systemctl restart airflow-webserver
+    systemctl restart edge-node-backend
+    systemctl restart auth-service
+}
+
+
+setup && \
+install_ot_node && \
+setup_auth_service && \
+setup_edge_node_api && \
+setup_edge_node_ui && \
+setup_drag_api && \
+setup_ka_minging_api && \
+setup_airflow_service && \
+check_service_status
+
+
+
+
 
 
