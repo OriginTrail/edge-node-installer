@@ -176,7 +176,7 @@ install_mysql() {
     mysql -u root -p"$SQL_PASSWORD" -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '';"
     mysql -u root -e "CREATE DATABASE operationaldb /*\!40100 DEFAULT CHARACTER SET utf8 */;"
     mysql -u root -e "CREATE DATABASE \`edge-node-auth-service\`"
-    mysql -u root -e "CREATE DATABASE \`edge-node-backend\`;"
+    mysql -u root -e "CREATE DATABASE \`edge-node-api\`;"
     mysql -u root -e "CREATE DATABASE drag_logging;"
     mysql -u root -e "CREATE DATABASE ka_mining_api_logging;"
     mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'otnodedb';"
@@ -203,7 +203,7 @@ setup() {
     echo "alias otnode-start='systemctl start otnode.service'" >> ~/.bashrc
     echo "alias otnode-logs='journalctl -u otnode --output cat -f'" >> ~/.bashrc
     echo "alias otnode-config='nano ~/ot-node/.origintrail_noderc'" >> ~/.bashrc
-    echo "alias edge-node-restart='systemctl restart auth-service && systemctl restart edge-node-backend && systemctl restart ka-mining-api && systemctl restart airflow-scheduler && systemctl restart drag-api'" >> ~/.bashrc
+    echo "alias edge-node-restart='systemctl restart auth-service && systemctl restart edge-node-api && systemctl restart ka-mining-api && systemctl restart airflow-scheduler && systemctl restart drag-api'" >> ~/.bashrc
 
     # Installing prereqs
     export DEBIAN_FRONTEND=noninteractive
@@ -357,18 +357,18 @@ EOL
 }
 
 setup_edge_node_api() {
-    echo "Setting up Backend Service..."
-    if check_folder "/root/edge-node-backend"; then
-        git clone $edge_node_api /root/edge-node-backend
-        cd /root/edge-node-backend
+    echo "Setting up API Service..."
+    if check_folder "/root/edge-node-api"; then
+        git clone $edge_node_api /root/edge-node-api
+        cd /root/edge-node-api
         git checkout main
 
         # Create the .env file with required variables
-        cat <<EOL > /root/edge-node-backend/.env
+        cat <<EOL > /root/edge-node-api/.env
 NODE_ENV=development
 DB_USERNAME=root
 DB_PASSWORD=otnodedb
-DB_DATABASE=edge-node-backend
+DB_DATABASE=edge-node-api
 DB_HOST=127.0.0.1
 DB_DIALECT=mysql
 PORT=3002
@@ -390,15 +390,15 @@ EOL
     fi
 
 
-    cat <<EOL > /etc/systemd/system/edge-node-backend.service
+    cat <<EOL > /etc/systemd/system/edge-node-api.service
 [Unit]
-Description=Edge Node Backend Service
+Description=Edge Node API Service
 After=network.target
 
 [Service]
-ExecStart=/root/.nvm/versions/node/v22.9.0/bin/node /root/edge-node-backend/app.js
-WorkingDirectory=/root/edge-node-backend/
-EnvironmentFile=/root/edge-node-backend/.env
+ExecStart=/root/.nvm/versions/node/v22.9.0/bin/node /root/edge-node-api/app.js
+WorkingDirectory=/root/edge-node-api/
+EnvironmentFile=/root/edge-node-api/.env
 Restart=always
 User=root
 Group=root
@@ -408,8 +408,8 @@ WantedBy=multi-user.target
 EOL
 
     systemctl daemon-reload
-    systemctl enable edge-node-backend.service
-    systemctl start edge-node-backend.service
+    systemctl enable edge-node-api.service
+    systemctl start edge-node-api.service
 }
 
 setup_edge_node_ui() {
@@ -659,14 +659,14 @@ check_service_status() {
     systemctl is-enabled ka-mining-api
     systemctl is-enabled airflow-scheduler
     systemctl is-enabled airflow-webserver
-    systemctl is-enabled edge-node-backend
+    systemctl is-enabled edge-node-api
     systemctl is-enabled auth-service
 
     systemctl restart otnode.service
     systemctl restart ka-mining-api
     systemctl restart airflow-scheduler
     systemctl restart airflow-webserver
-    systemctl restart edge-node-backend
+    systemctl restart edge-node-api
     systemctl restart auth-service
 }
 
