@@ -21,9 +21,10 @@ SERVICES=(
     "ka-mining-api"
     "edge-node-backend"
     "auth-service"
+    "drag-api"
     "nginx"
 )
-SERVICE_STATUSES=("in-progress" "in-progress" "in-progress" "in-progress" "in-progress")
+SERVICE_STATUSES=("in-progress" "in-progress" "in-progress" "in-progress" "in-progress" "in-progress")
 
 clear
 echo -e "\e[?25l"
@@ -32,7 +33,13 @@ i=0
 while true; do
     for idx in "${!SERVICES[@]}"; do
         service="${SERVICES[$idx]}"
-        tput cup $idx 0  
+        tput cup $idx 0
+
+
+        if [[ $service == "nginx" ]]; then
+            service="edge-node-ui"
+        fi
+
         # Display service status and spinner if in progress
         if [[ "${SERVICE_STATUSES[$idx]}" == "in-progress" ]]; then
             echo -ne "$service  ${SPINNERS[$i % ${#SPINNERS[@]}]} \r"
@@ -59,6 +66,10 @@ while true; do
                     SERVICE_STATUSES[$idx]="${GREEN}active${RESET}"
                 else
                     SERVICE_STATUSES[$idx]="${RED}inactive${RESET}"
+                fi
+
+                if [[ $service == "nginx" ]]; then
+                    service="edge-node-ui"
                 fi
 
                 echo -e "$service ... ${SERVICE_STATUSES[$idx]}"
