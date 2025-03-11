@@ -195,6 +195,44 @@ install_mysql() {
     systemctl status mysql --no-pager || true
 }
 
+####### todo: Update ot-node branch
+####### todo: Replace add .env variables to .origintrail_noderc
+
+install_ot_node() {
+    # Setting up node directory:s
+    ARCHIVE_REPOSITORY_URL="github.com/OriginTrail/ot-node/archive"
+    BRANCH="v6/release/testnet"
+    BRANCH_DIR="/root/ot-node-6-release-testnet"
+    cd /root
+    wget https://$ARCHIVE_REPOSITORY_URL/$BRANCH.zip
+    unzip *.zip
+    rm *.zip
+    OTNODE_VERSION=$(jq -r '.version' $BRANCH_DIR/package.json)
+    mkdir $OTNODE_DIR
+    mkdir $OTNODE_DIR/$OTNODE_VERSION
+    mv $BRANCH_DIR/* $OTNODE_DIR/$OTNODE_VERSION/
+    OUTPUT=$(mv $BRANCH_DIR/.* $OTNODE_DIR/$OTNODE_VERSION/ 2>&1)
+    rm -rf $BRANCH_DIR
+    ln -sfn $OTNODE_DIR/$OTNODE_VERSION $OTNODE_DIR/current
+
+    # Ensure the directory exists
+    mkdir -p "$CONFIG_DIR"
+
+    cd /root/edge-node-installer
+    # Call the function to generate config
+    generate_engine_node_config "$CONFIG_DIR"
+    if [[ $? -eq 0 ]]; then
+        echo "✅ Blockchain config successfully generated at $CONFIG_DIR"
+    else
+        echo "❌ Blockchain config generation failed!"
+    fi
+    chmod 600 /root/ot-node/.origintrail_noderc
+    cp /root/ot-node/current/installer/data/otnode.service /lib/systemd/system/
+
+    systemctl enable otnode || true
+}
+
+
 
 setup() {
     #adding aliases to .bashrc:
@@ -243,49 +281,13 @@ setup() {
 
     install_python
     install_blazegraph
+    install_ot_node
     install_mysql
 
     systemctl enable systemd-journald.service || true
     systemctl restart systemd-journald.service || true
 }
 
-
-####### todo: Update ot-node branch
-####### todo: Replace add .env variables to .origintrail_noderc
-
-install_ot_node() {
-    # Setting up node directory:s
-    ARCHIVE_REPOSITORY_URL="github.com/OriginTrail/ot-node/archive"
-    BRANCH="v6/release/testnet"
-    BRANCH_DIR="/root/ot-node-6-release-testnet"
-    cd /root
-    wget https://$ARCHIVE_REPOSITORY_URL/$BRANCH.zip
-    unzip *.zip
-    rm *.zip
-    OTNODE_VERSION=$(jq -r '.version' $BRANCH_DIR/package.json)
-    mkdir $OTNODE_DIR
-    mkdir $OTNODE_DIR/$OTNODE_VERSION
-    mv $BRANCH_DIR/* $OTNODE_DIR/$OTNODE_VERSION/
-    OUTPUT=$(mv $BRANCH_DIR/.* $OTNODE_DIR/$OTNODE_VERSION/ 2>&1)
-    rm -rf $BRANCH_DIR
-    ln -sfn $OTNODE_DIR/$OTNODE_VERSION $OTNODE_DIR/current
-
-    # Ensure the directory exists
-    mkdir -p "$CONFIG_DIR"
-
-    cd /root/edge-node-installer
-    # Call the function to generate config
-    generate_engine_node_config "$CONFIG_DIR"
-    if [[ $? -eq 0 ]]; then
-        echo "✅ Blockchain config successfully generated at $CONFIG_DIR"
-    else
-        echo "❌ Blockchain config generation failed!"
-    fi
-    chmod 600 /root/ot-node/.origintrail_noderc
-    cp /root/ot-node/current/installer/data/otnode.service /lib/systemd/system/
-
-    systemctl enable otnode || true
-}
 
 setup_auth_service() {
     echo "Setting up Authentication Service..."
@@ -641,7 +643,6 @@ EOL
     systemctl daemon-reload
     systemctl enable airflow-scheduler
     systemctl start airflow-scheduler
-    
 }
 
 check_service_status() {
@@ -672,7 +673,6 @@ check_service_status() {
 
 
 setup && \
-install_ot_node && \
 setup_auth_service && \
 setup_edge_node_api && \
 setup_edge_node_ui && \
@@ -680,9 +680,3 @@ setup_drag_api && \
 setup_ka_minging_api && \
 setup_airflow_service && \
 check_service_status
-
-
-
-
-
-
