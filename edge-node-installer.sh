@@ -94,6 +94,7 @@ fi
 
 OTNODE_DIR="/root/ot-node"
 
+#Setup MySql
 check_folder() {
     if [ -d "$1" ]; then
         echo "Note: It is recommended to delete all directories created by any previous installer executions before running the DKG Edge Node installer. This helps to avoid potential conflicts and issues during the installation process."
@@ -173,14 +174,14 @@ install_blazegraph() {
 
 install_mysql() {
     apt install tcllib mysql-server -y
-    mysql -u root -p"$SQL_PASSWORD" -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '';"
+    mysql -u root -p"root" -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '';"
     mysql -u root -e "CREATE DATABASE operationaldb /*\!40100 DEFAULT CHARACTER SET utf8 */;"
     mysql -u root -e "CREATE DATABASE \`edge-node-auth-service\`"
     mysql -u root -e "CREATE DATABASE \`edge-node-api\`;"
     mysql -u root -e "CREATE DATABASE drag_logging;"
     mysql -u root -e "CREATE DATABASE ka_mining_api_logging;"
-    mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'otnodedb';"
-    mysql -u root -e "flush privileges;"
+    mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$DB_PASSWORD';"
+    mysql -u root -e "$DB_PASSWORD"
     sed -i 's|max_binlog_size|#max_binlog_size|' /etc/mysql/mysql.conf.d/mysqld.cnf
     echo "disable_log_bin"
     echo -e "disable_log_bin\nwait_timeout = 31536000\ninteractive_timeout = 31536000" >> /etc/mysql/mysql.conf.d/mysqld.cnf
@@ -303,8 +304,8 @@ setup_auth_service() {
 SECRET="$(openssl rand -hex 64)"
 JWT_SECRET="$(openssl rand -hex 64)"
 NODE_ENV=development
-DB_USERNAME=root
-DB_PASSWORD=otnodedb
+DB_USERNAME=$DB_USERNAME
+DB_PASSWORD=$DB_PASSWORD
 DB_DATABASE=edge-node-auth-service
 DB_HOST=127.0.0.1
 DB_DIALECT=mysql
@@ -327,7 +328,7 @@ EOL
         sed "s/localhost/$SERVER_IP/g" "$SQL_FILE" > "$TEMP_SQL_FILE"
 
         # Execute SQL file on MySQL database
-        mysql -u "root" -p"otnodedb" "edge-node-auth-service" < "$TEMP_SQL_FILE"
+        mysql -u "root" -p"$DB_PASSWORD" "edge-node-auth-service" < "$TEMP_SQL_FILE"
 
         # Clean up temp file
         rm "$TEMP_SQL_FILE"
@@ -368,16 +369,16 @@ setup_edge_node_api() {
         # Create the .env file with required variables
         cat <<EOL > /root/edge-node-api/.env
 NODE_ENV=development
-DB_USERNAME=root
-DB_PASSWORD=otnodedb
-DB_DATABASE=edge-node-api
+B_USERNAME=$DB_USERNAME
+DB_PASSWORD=$DB_PASSWORD
+DB_DATABASE=edge-node-backend
 DB_HOST=127.0.0.1
 DB_DIALECT=mysql
 PORT=3002
 AUTH_SERVICE_ENDPOINT=http://$SERVER_IP:3001
 UI_ENDPOINT="http://$SERVER_IP"
-RUNTIME_NODE_OPERATIONAL_DB_USERNAME=root
-RUNTIME_NODE_OPERATIONAL_DB_PASSWORD=otnodedb
+RUNTIME_NODE_OPERATIONAL_DB_USERNAME=$DB_USERNAME
+RUNTIME_NODE_OPERATIONAL_DB_PASSWORD=$DB_PASSWORD
 RUNTIME_NODE_OPERATIONAL_DB_DATABASE=operationaldb
 RUNTIME_NODE_OPERATIONAL_DB_HOST=127.0.0.1
 RUNTIME_NODE_OPERATIONAL_DB_DIALECT=mysql
@@ -468,8 +469,8 @@ setup_drag_api() {
         cat <<EOL > /root/drag-api/.env
 SERVER_PORT=5002
 NODE_ENV=production
-DB_USER="root"
-DB_PASS="otnodedb"
+DB_USER=$DB_USER
+DB_PASS=$DB_PASSWORD
 DB_HOST=127.0.0.1
 DB_NAME=drag_logging
 DB_DIALECT=mysql
@@ -524,8 +525,8 @@ setup_ka_minging_api() {
         cat <<EOL > /root/ka-mining-api/.env
 PORT=5005
 PYTHON_ENV="STAGING"
-DB_USERNAME="root"
-DB_PASSWORD="otnodedb"
+DB_USERNAME=$DB_USERNAME
+DB_PASSWORD=$DB_PASSWORD
 DB_HOST="127.0.0.1"
 DB_NAME="ka_mining_api_logging"
 DAG_FOLDER_NAME="/root/ka-mining-api/dags"
