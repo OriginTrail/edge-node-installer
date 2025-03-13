@@ -369,7 +369,7 @@ setup_edge_node_api() {
         # Create the .env file with required variables
         cat <<EOL > /root/edge-node-api/.env
 NODE_ENV=development
-B_USERNAME=$DB_USERNAME
+DB_USERNAME=$DB_USERNAME
 DB_PASSWORD=$DB_PASSWORD
 DB_DATABASE=edge-node-backend
 DB_HOST=127.0.0.1
