@@ -6,7 +6,6 @@ if [ "$(id -u)" != "0" ]; then
     exit 1
 fi
 
-
 # Load the configuration variables
 if [ -f .env ]; then
   source .env
@@ -19,11 +18,21 @@ source ./engine-node-config-generator.sh
 CONFIG_DIR="/root/ot-node"
 
 #configure edge-node components github repositories
-edge_node_knowledge_mining=$EDGE_NODE_KNOWLEDGE_MINING_REPO
-edge_node_auth_service=$EDGE_NODE_AUTH_SERVICE_REPO
-edge_node_drag=$EDGE_NODE_DRAG_REPO
-edge_node_api=$EDGE_NODE_API_REPO
-edge_node_interface=$EDGE_NODE_UI_REPO
+declare -A repos=(
+  ["edge_node_knowledge_mining"]=${EDGE_NODE_KNOWLEDGE_MINING_REPO:-"https://github.com/OriginTrail/edge-node-knowledge-mining"}
+  ["edge_node_auth_service"]=${EDGE_NODE_AUTH_SERVICE_REPO:-"https://github.com/OriginTrail/edge-node-authentication-service"}
+  ["edge_node_drag"]=${EDGE_NODE_DRAG_REPO:-"https://github.com/OriginTrail/edge-node-drag"}
+  ["edge_node_api"]=${EDGE_NODE_API_REPO:-"https://github.com/OriginTrail/edge-node-api"}
+  ["edge_node_interface"]=${EDGE_NODE_UI_REPO:-"https://github.com/OriginTrail/edge-node-interface"}
+)
+
+if [[ -n "$REPOSITORY_USER" && -n "$REPOSITORY_AUTH" ]]; then
+  credentials="${REPOSITORY_USER}:${REPOSITORY_AUTH}@"
+  for key in "${!repos[@]}"; do
+    repos[$key]="${repos[$key]//https:\/\//https://$credentials}"
+  done
+fi
+
 
 # Export server IP
 SERVER_IP=$(hostname -I | awk '{print $1}')
@@ -232,7 +241,6 @@ install_ot_node() {
 
     systemctl enable otnode || true
 }
-
 
 
 setup() {
