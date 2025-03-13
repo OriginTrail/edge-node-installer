@@ -56,8 +56,9 @@ while true; do
         PARENT_PID=$(ssh $REMOTE_USER@$REMOTE_HOST "pgrep -f $SCRIPT_NAME" 2>/dev/null)
         
         if [ -z "$PARENT_PID" ]; then
-            # This is to give the services time to start
+            # Timeout to allow services to restart
             sleep 5;
+            
             # Check the service status for each service
             for idx in "${!SERVICES[@]}"; do
                 tput cup $idx 0
