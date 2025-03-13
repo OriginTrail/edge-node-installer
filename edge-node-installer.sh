@@ -408,7 +408,7 @@ if check_folder "/root/drag-api"; then
     cat <<EOL > /root/drag-api/.env
 SERVER_PORT=5002
 NODE_ENV=production
-DB_USER=$DB_USER
+DB_USER=$DB_USERNAME
 DB_PASS=$DB_PASSWORD
 DB_HOST=127.0.0.1
 DB_NAME=drag_logging
