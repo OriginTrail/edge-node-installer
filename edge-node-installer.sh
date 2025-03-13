@@ -190,7 +190,7 @@ install_mysql() {
     mysql -u root -e "CREATE DATABASE drag_logging;"
     mysql -u root -e "CREATE DATABASE ka_mining_api_logging;"
     mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$DB_PASSWORD';"
-    mysql -u root -e "$DB_PASSWORD"
+    mysql -u root -p"$DB_PASSWORD" -e "flush privileges;"
     sed -i 's|max_binlog_size|#max_binlog_size|' /etc/mysql/mysql.conf.d/mysqld.cnf
     echo "disable_log_bin"
     echo -e "disable_log_bin\nwait_timeout = 31536000\ninteractive_timeout = 31536000" >> /etc/mysql/mysql.conf.d/mysqld.cnf
