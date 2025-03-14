@@ -302,7 +302,7 @@ setup() {
 setup_auth_service() {
     echo "Setting up Authentication Service..."
     if check_folder "/root/edge-node-auth-service"; then
-        git clone $edge_node_auth_service /root/edge-node-auth-service
+        git clone "${repos[edge_node_auth_service]}" /root/edge-node-auth-service
         cd /root/edge-node-auth-service
         git checkout main
 
@@ -369,7 +369,7 @@ EOL
 setup_edge_node_api() {
     echo "Setting up API Service..."
     if check_folder "/root/edge-node-api"; then
-        git clone $edge_node_api /root/edge-node-api
+        git clone "${repos[edge_node_api]}" /root/edge-node-api
         cd /root/edge-node-api
         git checkout main
 
@@ -378,7 +378,7 @@ setup_edge_node_api() {
 NODE_ENV=development
 DB_USERNAME=$DB_USERNAME
 DB_PASSWORD=$DB_PASSWORD
-DB_DATABASE=edge-node-backend
+DB_DATABASE=edge-node-api
 DB_HOST=127.0.0.1
 DB_DIALECT=mysql
 PORT=3002
@@ -425,7 +425,7 @@ setup_edge_node_ui() {
     echo "Setting up Edge Node UI..."
 
     if check_folder "/var/www/edge-node-ui"; then
-        git clone $edge_node_interface /var/www/edge-node-ui
+        git clone "${repos[edge_node_interface]}" /var/www/edge-node-ui
         cd /var/www/edge-node-ui
         git checkout main
 
@@ -467,7 +467,7 @@ setup_drag_api() {
     echo "Setting up dRAG API Service..."
 
     if check_folder "/root/drag-api"; then
-        git clone $edge_node_drag /root/drag-api
+        git clone "${repos[edge_node_drag]}" /root/drag-api
         cd /root/drag-api
         git checkout main
 
@@ -517,7 +517,7 @@ setup_ka_minging_api() {
     echo "Setting up KA Mining API Service..."
 
     if check_folder "/root/ka-mining-api"; then
-        git clone $edge_node_knowledge_mining /root/ka-mining-api
+        git clone "${repos[edge_node_knowledge_mining]}" /root/ka-mining-api
         cd /root/ka-mining-api
         git checkout main
 
