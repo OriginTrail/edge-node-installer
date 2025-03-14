@@ -183,7 +183,7 @@ install_blazegraph() {
 
 install_mysql() {
     apt install tcllib mysql-server -y
-    mysql -u root -p"root" -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '';"
+    mysql -u root -p"root" -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '';"
     mysql -u root -e "CREATE DATABASE operationaldb /*\!40100 DEFAULT CHARACTER SET utf8 */;"
     mysql -u root -e "CREATE DATABASE \`edge-node-auth-service\`"
     mysql -u root -e "CREATE DATABASE \`edge-node-api\`;"
