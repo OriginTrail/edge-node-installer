@@ -273,6 +273,7 @@ setup() {
     # Install nodejs v20.18.0 (via NVM).
     wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash > /dev/null 2>&1
     export NVM_DIR="$HOME/.nvm"
+
     # This loads nvm
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
     # This loads nvm bash_completion
@@ -304,7 +305,6 @@ setup_auth_service() {
         git clone $edge_node_auth_service /root/edge-node-auth-service
         cd /root/edge-node-auth-service
         git checkout main
-
 
         # Create the .env file with required variables
         create_env_file
@@ -364,7 +364,6 @@ EOL
     systemctl daemon-reload
     systemctl enable auth-service
     systemctl start auth-service
-
 }
 
 setup_edge_node_api() {
@@ -399,7 +398,6 @@ EOL
         # Setup database
         npx sequelize-cli db:migrate
     fi
-
 
     cat <<EOL > /etc/systemd/system/edge-node-api.service
 [Unit]
@@ -499,7 +497,6 @@ EOL
 Description=dRAG API Service
 After=network.target
 
-
 [Service]
 ExecStart=/root/.nvm/versions/node/v22.9.0/bin/node /root/drag-api/server.js
 WorkingDirectory=/root/drag-api
@@ -511,10 +508,9 @@ Group=root
 [Install]
 WantedBy=multi-user.target
 EOL
-
+    
     systemctl enable drag-api
     systemctl start drag-api
-
 }
 
 setup_ka_minging_api() {
@@ -627,10 +623,8 @@ EOL
     done
 
     # Enable and start the service
-    systemctl daemon-reload
     systemctl enable airflow-webserver
     systemctl start airflow-webserver
-
 
     cat <<EOL > /etc/systemd/system/airflow-scheduler.service
 [Unit]
@@ -649,7 +643,6 @@ Group=root
 WantedBy=multi-user.target
 EOL
 
-    systemctl daemon-reload
     systemctl enable airflow-scheduler
     systemctl start airflow-scheduler
 }
