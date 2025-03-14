@@ -19,7 +19,7 @@ SPINNERS=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
 SERVICES=(
     "otnode"
     "ka-mining-api"
-    "edge-node-backend"
+    "edge-node-api"
     "auth-service"
     "drag-api"
     "nginx"
@@ -27,13 +27,17 @@ SERVICES=(
 SERVICE_STATUSES=("in-progress" "in-progress" "in-progress" "in-progress" "in-progress" "in-progress")
 
 clear
+echo -e "${BOLD}==============================================${RESET}"
+echo -e "           ${BOLD}Installing Services...${RESET} 🚀"
+echo -e "${BOLD}==============================================${RESET}\n"
 echo -e "\e[?25l"
+
 
 i=0
 while true; do
     for idx in "${!SERVICES[@]}"; do
         service="${SERVICES[$idx]}"
-        tput cup $idx 0
+        tput cup $((idx + 3)) 0
 
 
         if [[ $service == "nginx" ]]; then
@@ -57,25 +61,25 @@ while true; do
         
         if [ -z "$PARENT_PID" ]; then
             # Timeout to allow services to restart
-            sleep 5;
+            sleep 2;
 
             # Check the service status for each service
             for idx in "${!SERVICES[@]}"; do
-                tput cup $idx 0
+                tput cup $((idx + 3)) 0
                 service="${SERVICES[$idx]}"
                 status=$(ssh -o BatchMode=yes -o ConnectTimeout=5 $REMOTE_USER@$REMOTE_HOST "systemctl is-active $service" 2>/dev/null)
 
                 if [[ "$status" == "active" ]]; then
-                    SERVICE_STATUSES[$idx]="${GREEN}active${RESET}"
+                    STATUS_TEXT=" ... ${GREEN}Active${RESET}"
                 else
-                    SERVICE_STATUSES[$idx]="${RED}inactive${RESET}"
+                    STATUS_TEXT=" ... ${RED}Inactive${RESET}"
                 fi
 
                 if [[ $service == "nginx" ]]; then
                     service="edge-node-ui"
                 fi
 
-                echo -e "$service ... ${SERVICE_STATUSES[$idx]}"
+                echo -e "${BOLD}$service${RESET}  $STATUS_TEXT"
             done
 
             tput cnorm
