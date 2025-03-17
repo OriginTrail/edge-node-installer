@@ -27,9 +27,9 @@ SERVICES=(
 SERVICE_STATUSES=("in-progress" "in-progress" "in-progress" "in-progress" "in-progress" "in-progress")
 
 clear
-echo -e "${BOLD}==============================================${RESET}"
-echo -e "           ${BOLD}Installing Services...${RESET} 🚀"
-echo -e "${BOLD}==============================================${RESET}\n"
+echo -e "${BOLD}===========================${RESET}"
+echo -e "   ${BOLD}Services status...${RESET} 🚀    "
+echo -e "${BOLD}===========================${RESET}\n"
 echo -e "\e[?25l"
 
 
