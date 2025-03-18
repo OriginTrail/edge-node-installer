@@ -290,8 +290,8 @@ setup() {
     ln -s $(which npm) /usr/bin/ > /dev/null 2>&1
 
     install_python
-    install_blazegraph
     install_ot_node
+    install_blazegraph
     install_mysql
 
     systemctl enable systemd-journald.service || true
