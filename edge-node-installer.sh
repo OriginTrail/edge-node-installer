@@ -150,7 +150,7 @@ install_python() {
 
     # Step 4: Ensure pyenv is loaded in the current shell
     export PATH="$HOME/.pyenv/bin:$PATH"
-    eval "$(5pyenv init --path)"
+    eval "$(pyenv init --path)"
     eval "$(pyenv init -)"
 
     # Step 5: Install Python 3.11.7 and set it as global version
