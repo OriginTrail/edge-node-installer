@@ -137,35 +137,27 @@ EOL
 
 install_python() {
     # Install Python 3.11.7
-    # Step 1: Update system and install dependencies
-    apt update
-    apt install -y make build-essential libssl-dev zlib1g-dev \
-    libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm \
-    libncurses5-dev libncursesw5-dev xz-utils tk-dev \
-    libffi-dev liblzma-dev python3-openssl git \
-    libmysqlclient-dev pkg-config python3-dev
-
-    # Step 2: Install pyenv
+    # Step 1: Install pyenv
     curl https://pyenv.run | bash
 
-    # Step 3: Add pyenv to shell configuration files (.bashrc and .bash_profile)
+    # Step 2: Add pyenv to shell configuration files (.bashrc and .bash_profile)
     echo -e '\n# Pyenv setup\nexport PATH="$HOME/.pyenv/bin:$PATH"\neval "$(pyenv init --path)"\neval "$(pyenv init -)"\n' >> ~/.bashrc
     echo -e '\n# Pyenv setup\nexport PATH="$HOME/.pyenv/bin:$PATH"\neval "$(pyenv init --path)"\neval "$(pyenv init -)"\n' >> ~/.bash_profile
 
-    # Step 4: Source shell configuration files
+    # Step 3: Source shell configuration files
     source ~/.bashrc
     source ~/.bash_profile
 
-    # Step 5: Ensure pyenv is loaded in the current shell
+    # Step 4: Ensure pyenv is loaded in the current shell
     export PATH="$HOME/.pyenv/bin:$PATH"
-    eval "$(pyenv init --path)"
+    eval "$(5pyenv init --path)"
     eval "$(pyenv init -)"
 
-    # Step 6: Install Python 3.11.7 and set it as global version
+    # Step 5: Install Python 3.11.7 and set it as global version
     pyenv install 3.11.7
     pyenv global 3.11.7
 
-    # Step 7: Verify installation
+    # Step 6: Verify installation
     pyenv --version
     python --version
 }
@@ -263,7 +255,8 @@ setup() {
     libbz2-dev libreadline-dev libsqlite3-dev wget unzip curl llvm \
     jq libncurses5-dev libncursesw5-dev xz-utils tk-dev \
     libffi-dev liblzma-dev python3-openssl git \
-    libmysqlclient-dev pkg-config python3-dev
+    libmysqlclient-dev pkg-config python3-dev \
+    default-jre
     
     # Install redis
     apt install redis-server -y
