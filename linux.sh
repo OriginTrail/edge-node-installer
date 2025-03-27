@@ -1,5 +1,9 @@
 #!/bin/sh
 
+EDGE_NODE_DIR="/root/edge-node"
+
+source './common.sh'
+
 # Function to check the Ubuntu version
 check_system_version() {
     # Get the Ubuntu version
@@ -26,42 +30,43 @@ echo "alias edge-node-restart='systemctl restart auth-service && systemctl resta
 
 install_blazegraph() {
     wget -P $OTNODE_DIR https://github.com/blazegraph/database/releases/latest/download/blazegraph.jar
-    cp $OTNODE_DIR/current/installer/data/blazegraph.service /lib/systemd/system/
+    
+    if [ $DEPLOYMENT_METHOD = "development" ]; then
+        cp $OTNODE_DIR/current/installer/data/blazegraph.service /lib/systemd/system/
 
-    systemctl daemon-reload
-    systemctl enable blazegraph.service
-    systemctl start blazegraph.service
-    systemctl status blazegraph.service --no-pager || true
+        systemctl daemon-reload
+        systemctl enable blazegraph.service
+        systemctl start blazegraph.service
+        systemctl status blazegraph.service --no-pager || true
+    fi
 
     echo "✅ Blazegraph checked. Continuing execution..."
 }
 
 
-
 install_mysql() {
     apt install tcllib mysql-server -y
-    mysql -u root -p"root" -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '';"
+    mysql -u root -p"root" -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '';"
     mysql -u root -e "CREATE DATABASE operationaldb /*\!40100 DEFAULT CHARACTER SET utf8 */;"
     mysql -u root -e "CREATE DATABASE \`edge-node-auth-service\`"
     mysql -u root -e "CREATE DATABASE \`edge-node-api\`;"
     mysql -u root -e "CREATE DATABASE drag_logging;"
     mysql -u root -e "CREATE DATABASE ka_mining_api_logging;"
     mysql -u root -e "CREATE DATABASE airflow_db;"
-    mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$DB_PASSWORD';"
+    mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '$DB_PASSWORD';"
     mysql -u root -p"$DB_PASSWORD" -e "flush privileges;"
     sed -i 's|max_binlog_size|#max_binlog_size|' /etc/mysql/mysql.conf.d/mysqld.cnf
     echo "disable_log_bin"
     echo -e "disable_log_bin\nwait_timeout = 31536000\ninteractive_timeout = 31536000" >> /etc/mysql/mysql.conf.d/mysqld.cnf
     echo "REPOSITORY_PASSWORD=otnodedb" >> /root/ot-node/current/.env
     echo "NODE_ENV=testnet" >> /root/ot-node/current/.env
-    cd /root/ot-node/current
-    npm ci --omit=dev --ignore-scripts
 
     systemctl daemon-reload
     systemctl enable mysql.service
     systemctl start mysql.service
     systemctl status mysql.service --no-pager || true
 }
+
 
 install_ot_node() {
     # Setting up node directory:s
@@ -92,8 +97,10 @@ install_ot_node() {
         echo "❌ Blockchain config generation failed!"
     fi
     chmod 600 /root/ot-node/.origintrail_noderc
+    
     cp /root/ot-node/current/installer/data/otnode.service /lib/systemd/system/
-
+    cd /root/ot-node/current && npm ci --omit=dev --ignore-scripts
+    
     systemctl enable otnode || true
 }
 
@@ -198,7 +205,8 @@ EOL
         echo "User config updated successfully."
     fi;
 
-    cat <<EOL > /etc/systemd/system/auth-service.service
+    if [ $DEPLOYMENT_METHOD = "development" ]; then
+        cat <<EOL > /etc/systemd/system/auth-service.service
 [Unit]
 Description=Edge Node Authentication Service
 After=network.target
@@ -215,9 +223,10 @@ Group=root
 WantedBy=multi-user.target
 EOL
 
-    systemctl daemon-reload
-    systemctl enable auth-service
-    systemctl start auth-service
+        systemctl daemon-reload
+        systemctl enable auth-service
+        systemctl start auth-service
+    fi
 }
 
 
@@ -254,7 +263,8 @@ EOL
         npx sequelize-cli db:migrate
     fi
 
-    cat <<EOL > /etc/systemd/system/edge-node-api.service
+    if [ $DEPLOYMENT_METHOD = "development" ]; then
+        cat <<EOL > /etc/systemd/system/edge-node-api.service
 [Unit]
 Description=Edge Node API Service
 After=network.target
@@ -271,9 +281,10 @@ Group=root
 WantedBy=multi-user.target
 EOL
 
-    systemctl daemon-reload
-    systemctl enable edge-node-api.service
-    systemctl start edge-node-api.service
+        systemctl daemon-reload
+        systemctl enable edge-node-api.service
+        systemctl start edge-node-api.service
+    fi
 }
 
 setup_edge_node_ui() {
@@ -347,7 +358,8 @@ EOL
         npx sequelize-cli db:migrate
     fi
 
-    cat <<EOL > /etc/systemd/system/drag-api.service
+    if [ $DEPLOYMENT_METHOD = "development" ]; then
+        cat <<EOL > /etc/systemd/system/drag-api.service
 [Unit]
 Description=dRAG API Service
 After=network.target
@@ -363,10 +375,13 @@ Group=root
 [Install]
 WantedBy=multi-user.target
 EOL
-    
-    systemctl enable drag-api
-    systemctl start drag-api
+
+        systemctl enable drag-api
+        systemctl start drag-api
+    fi
 }
+    
+
 
 
 setup_ka_minging_api() {
@@ -404,7 +419,8 @@ MILVUS_URI="$MILVUS_URI"
 EOL
     fi
 
-    cat <<EOL > /etc/systemd/system/ka-mining-api.service
+    if [ $DEPLOYMENT_METHOD = "development" ]; then
+        cat <<EOL > /etc/systemd/system/ka-mining-api.service
 [Unit]
 Description=KA Mining API Service
 After=network.target
@@ -421,9 +437,10 @@ Group=root
 WantedBy=multi-user.target
 EOL
 
-    systemctl daemon-reload
-    systemctl enable ka-mining-api
-    systemctl start ka-mining-api
+        systemctl daemon-reload
+        systemctl enable ka-mining-api
+        systemctl start ka-mining-api
+    fi
 }
 
 
@@ -454,8 +471,9 @@ setup_airflow_service() {
         -e 's|^load_examples *=.*|load_examples = False|' \
         /root/airflow/airflow.cfg
 
-    # AIRFLOW WEBSERVER sytemctl setup
-    cat <<EOL > /etc/systemd/system/airflow-webserver.service
+    if [ $DEPLOYMENT_METHOD = "development" ]; then
+        # AIRFLOW WEBSERVER sytemctl setup
+        cat <<EOL > /etc/systemd/system/airflow-webserver.service
 [Unit]
 Description=Airflow Webserver
 After=network.target
@@ -472,15 +490,15 @@ Group=root
 WantedBy=multi-user.target
 EOL
 
-    # Unpause DAGS
-    for dag_file in dags/*.py; do
-        dag_name=$(basename "$dag_file" .py)
-        /root/ka-mining-api/.venv/bin/airflow dags unpause "$dag_name"
-    done
+        # Unpause DAGS
+        for dag_file in dags/*.py; do
+            dag_name=$(basename "$dag_file" .py)
+            /root/ka-mining-api/.venv/bin/airflow dags unpause "$dag_name"
+        done
 
-    # Enable and start the service
-    systemctl enable airflow-webserver
-    systemctl start airflow-webserver
+        # Enable and start the service
+        systemctl enable airflow-webserver
+        systemctl start airflow-webserver
 
     cat <<EOL > /etc/systemd/system/airflow-scheduler.service
 [Unit]
@@ -499,8 +517,9 @@ Group=root
 WantedBy=multi-user.target
 EOL
 
-    systemctl enable airflow-scheduler
-    systemctl start airflow-scheduler
+        systemctl enable airflow-scheduler
+        systemctl start airflow-scheduler
+    fi
 }
 
 check_service_status() {

@@ -1,11 +1,5 @@
 #!/bin/sh
 
-# Check if script is run as root
-if [ "$(id -u)" != "0" ]; then
-    echo "This script must be run as root. Please switch to the root user and try again."
-    exit 1
-fi
-
 # Load the configuration variables
 if [ -f .env ]; then
   source .env
@@ -14,22 +8,33 @@ else
   exit 1
 fi
 
-OTNODE_DIR=""
 OS=$(uname -s)
 if [[ "$OS" == "Darwin" ]]; then
     echo "Detected macOS"
     source './macos.sh'
-    OTNODE_DIR="$HOME/ot-node"
 
 elif [[ "$OS" == "Linux" ]]; then
     echo "Detected Linux"
+
+    # Check if script is run as root
+    if [ "$(id -u)" != "0" ]; then
+        echo "This script must be run as root. Please switch to the root user and try again."
+        exit 1
+    fi
+
     source './linux.sh'
     check_system_version
-    OTNODE_DIR="/root/ot-node"
-
+    
 else
     echo "Unsupported OS: $OS"
     exit 1
+fi
+
+mkdir -p $EDGE_NODE_DIR
+
+SHELL_RC="$HOME/.zshrc"
+if [[ "$SHELL" == "/bin/bash" ]]; then
+    SHELL_RC="$HOME/.bashrc"
 fi
 
 source ./engine-node-config-generator.sh
@@ -50,12 +55,7 @@ if [[ -n "$REPOSITORY_USER" && -n "$REPOSITORY_AUTH" ]]; then
   done
 fi
 
-
-# Export server IP
-SERVER_IP=$(hostname -I | awk '{print $1}')
-
-
-
+OTNODE_DIR="$EDGE_NODE_DIR/ot-node"
 if [ -d "$OTNODE_DIR" ]; then
     echo -e "\n⚠️  The DKG Node directory '$OTNODE_DIR' already exists."
     echo "Please choose one of the following options before continuing:"
@@ -94,74 +94,20 @@ if [ -d "$OTNODE_DIR" ]; then
     done
 fi
 
-check_folder() {
-    if [ -d "$1" ]; then
-        echo "Note: It is recommended to delete all directories created by any previous installer executions before running the DKG Edge Node installer. This helps to avoid potential conflicts and issues during the installation process."
-        read -p "Directory $1 already exists. Do you want to delete and clone again? (yes/no) [default: no]: " choice
-        choice=${choice:-no}  # Default to 'no' if the user presses Enter without input
-
-        if [ "$choice" == "yes" ]; then
-            rm -rf "$1"
-            echo "Directory $1 deleted."
-        else
-            echo "Skipping clone for $1."
-            return 1
-        fi
-    fi
-    return 0
-}
-
-create_env_file() {
-    cat <<EOL > $1/.env
-NODE_ENV=development
-DB_USERNAME=root
-DB_PASSWORD=otnodedb
-DB_DATABASE=$2
-DB_HOST=127.0.0.1
-DB_DIALECT=mysql
-PORT=$3
-UI_ENDPOINT=http://$SERVER_IP
-UI_SSL=false
-EOL
-}
-
-install_python() {
-    # Install Python 3.11.7
-    # Step 1: Install pyenv
-    curl https://pyenv.run | bash
-
-    # Step 2: Add pyenv to shell configuration files (.bashrc and .bash_profile)
-    echo -e '\n# Pyenv setup\nexport PATH="$HOME/.pyenv/bin:$PATH"\neval "$(pyenv init --path)"\neval "$(pyenv init -)"\n' >> ~/.bashrc
-    echo -e '\n# Pyenv setup\nexport PATH="$HOME/.pyenv/bin:$PATH"\neval "$(pyenv init --path)"\neval "$(pyenv init -)"\n' >> ~/.bash_profile
-
-    # Step 3: Source shell configuration files
-    source ~/.bashrc
-    source ~/.bash_profile
-
-    # Step 4: Ensure pyenv is loaded in the current shell
-    export PATH="$HOME/.pyenv/bin:$PATH"
-    eval "$(pyenv init --path)"
-    eval "$(pyenv init -)"
-
-    # Step 5: Install Python 3.11.7 and set it as global version
-    pyenv install 3.11.7
-    pyenv global 3.11.7
-
-    # Step 6: Verify installation
-    pyenv --version
-    python --version
-}
-
+# Export server IP
+SERVER_IP=$(hostname -I | awk '{print $1}')
 
 
 # ####### todo: Update ot-node branch
 # ####### todo: Replace add .env variables to .origintrail_noderc
-
-setup && \
+setup
 setup_auth_service && \
 setup_edge_node_api && \
 setup_edge_node_ui && \
 setup_drag_api && \
 setup_ka_minging_api && \
 setup_airflow_service && \
-check_service_status
+
+if [ $DEPLOYMENT_METHOD = "development" ]; then
+    check_service_status
+fi
