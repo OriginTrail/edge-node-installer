@@ -33,7 +33,7 @@ echo "alias edge-node-restart='systemctl restart auth-service && systemctl resta
 install_blazegraph() {
     wget -P $OTNODE_DIR https://github.com/blazegraph/database/releases/latest/download/blazegraph.jar
     
-    if [ $DEPLOYMENT_METHOD = "production" ]; then
+    if [[ $DEPLOYMENT_METHOD = "production" ]]; then
         cp $OTNODE_DIR/current/installer/data/blazegraph.service /lib/systemd/system/
 
         systemctl daemon-reload
@@ -111,7 +111,7 @@ install_ot_node() {
     echo "REPOSITORY_PASSWORD=otnodedb" >> "$OTNODE_DIR/current/.env"
     echo "NODE_ENV=testnet" >> "$OTNODE_DIR/current/.env"
     
-    if [ $DEPLOYMENT_METHOD = "production" ]; then
+    if [[ $DEPLOYMENT_METHOD = "production" ]]; then
         cp /root/ot-node/current/installer/data/otnode.service /lib/systemd/system/
         cd /root/ot-node/current && npm ci --omit=dev --ignore-scripts
     
@@ -127,8 +127,6 @@ setup() {
     echo "alias otnode-start='systemctl start otnode.service'" >> ~/.bashrc
     echo "alias otnode-logs='journalctl -u otnode --output cat -f'" >> ~/.bashrc
     echo "alias otnode-config='nano ~/ot-node/.origintrail_noderc'" >> ~/.bashrc
-
-    # Inside linux.sh, we do an
 
     # Installing prereqs
     export DEBIAN_FRONTEND=noninteractive
@@ -220,7 +218,7 @@ EOL
         echo "User config updated successfully."
     fi;
 
-    if [ $DEPLOYMENT_METHOD = "production" ]; then
+    if [[ $DEPLOYMENT_METHOD = "production" ]]; then
         cat <<EOL > /etc/systemd/system/auth-service.service
 [Unit]
 Description=Edge Node Authentication Service
@@ -278,16 +276,16 @@ EOL
         npx sequelize-cli db:migrate
     fi
 
-    if [ $DEPLOYMENT_METHOD = "production" ]; then
+    if [[ $DEPLOYMENT_METHOD = "production" ]]; then
         cat <<EOL > /etc/systemd/system/edge-node-api.service
 [Unit]
 Description=Edge Node API Service
 After=network.target
 
 [Service]
-ExecStart=/root/.nvm/versions/node/v22.9.0/bin/node /root/edge-node-api/app.js
-WorkingDirectory=/root/edge-node-api/
-EnvironmentFile=/root/edge-node-api/.env
+ExecStart=$HOME/.nvm/versions/node/v22.9.0/bin/node /root/edge-node-api/app.js
+WorkingDirectory=$HOME/edge-node-api/
+EnvironmentFile=$HOME/edge-node-api/.env
 Restart=always
 User=root
 Group=root
@@ -347,13 +345,13 @@ EOL
 setup_drag_api() {
     echo "Setting up dRAG API Service..."
 
-    if check_folder "/root/drag-api"; then
-        git clone "${repos[edge_node_drag]}" /root/drag-api
-        cd /root/drag-api
+    if check_folder "$HOME/drag-api"; then
+        git clone "${repos[edge_node_drag]}" $HOME/drag-api
+        cd $HOME/drag-api
         git checkout main
 
         # Create the .env file with required variables
-        cat <<EOL > /root/drag-api/.env
+        cat <<EOL > $HOME/drag-api/.env
 SERVER_PORT=5002
 NODE_ENV=production
 DB_USER=$DB_USERNAME
@@ -373,7 +371,7 @@ EOL
         npx sequelize-cli db:migrate
     fi
 
-    if [ $DEPLOYMENT_METHOD = "production" ]; then
+    if [[ $DEPLOYMENT_METHOD = "production" ]]; then
         cat <<EOL > /etc/systemd/system/drag-api.service
 [Unit]
 Description=dRAG API Service
@@ -400,9 +398,9 @@ EOL
 setup_ka_minging_api() {
     echo "Setting up KA Mining API Service..."
 
-    if check_folder "/root/ka-mining-api"; then
-        git clone "${repos[edge_node_knowledge_mining]}" /root/ka-mining-api
-        cd /root/ka-mining-api
+    if check_folder "$HOME/ka-mining-api"; then
+        git clone "${repos[edge_node_knowledge_mining]}" $HOME/ka-mining-api
+        cd $HOME/ka-mining-api
         git checkout main
 
         python3.11 -m venv .venv
@@ -410,14 +408,14 @@ setup_ka_minging_api() {
         pip install -r requirements.txt
 
         # Create the .env file with required variables
-        cat <<EOL > /root/ka-mining-api/.env
+        cat <<EOL > $HOME/ka-mining-api/.env
 PORT=5005
 PYTHON_ENV="STAGING"
 DB_USERNAME=$DB_USERNAME
 DB_PASSWORD=$DB_PASSWORD
 DB_HOST="127.0.0.1"
 DB_NAME="ka_mining_api_logging"
-DAG_FOLDER_NAME="/root/ka-mining-api/dags"
+DAG_FOLDER_NAME="$HOME/ka-mining-api/dags"
 AUTH_ENDPOINT=http://$SERVER_IP:3001
 
 OPENAI_API_KEY="$OPENAI_API_KEY"
@@ -432,16 +430,16 @@ MILVUS_URI="$MILVUS_URI"
 EOL
     fi
 
-    if [ $DEPLOYMENT_METHOD = "production" ]; then
+    if [[ $DEPLOYMENT_METHOD = "production" ]]; then
         cat <<EOL > /etc/systemd/system/ka-mining-api.service
 [Unit]
 Description=KA Mining API Service
 After=network.target
 
 [Service]
-ExecStart=/root/ka-mining-api/.venv/bin/python /root/ka-mining-api/app.py
-WorkingDirectory=/root/ka-mining-api
-EnvironmentFile=/root/ka-mining-api/.env
+ExecStart=$HOME/ka-mining-api/.venv/bin/python $HOME/ka-mining-api/app.py
+WorkingDirectory=$HOME/ka-mining-api
+EnvironmentFile=$HOME/ka-mining-api/.env
 Restart=always
 User=root
 Group=root
@@ -484,7 +482,7 @@ setup_airflow_service() {
         -e 's|^load_examples *=.*|load_examples = False|' \
         /root/airflow/airflow.cfg
 
-    if [ $DEPLOYMENT_METHOD = "production" ]; then
+    if [[ $DEPLOYMENT_METHOD = "production" ]]; then
         # AIRFLOW WEBSERVER sytemctl setup
         cat <<EOL > /etc/systemd/system/airflow-webserver.service
 [Unit]
@@ -492,9 +490,9 @@ Description=Airflow Webserver
 After=network.target
 
 [Service]
-ExecStart=/root/ka-mining-api/.venv/bin/airflow webserver --port 8008
-WorkingDirectory=/root/ka-mining-api
-EnvironmentFile=/root/ka-mining-api/.env
+ExecStart=$HOME/ka-mining-api/.venv/bin/airflow webserver --port 8008
+WorkingDirectory=$HOME/ka-mining-api
+EnvironmentFile=$HOME/ka-mining-api/.env
 Restart=always
 User=root
 Group=root
@@ -506,7 +504,7 @@ EOL
         # Unpause DAGS
         for dag_file in dags/*.py; do
             dag_name=$(basename "$dag_file" .py)
-            /root/ka-mining-api/.venv/bin/airflow dags unpause "$dag_name"
+            $HOME/ka-mining-api/.venv/bin/airflow dags unpause "$dag_name"
         done
 
         # Enable and start the service
