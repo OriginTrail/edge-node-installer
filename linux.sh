@@ -54,7 +54,8 @@ install_blazegraph() {
 install_mysql() {
     apt install tcllib mysql-server -y
 
-    mysql -u root -p"root" -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '';"
+    mysql -u root ${DB_ROOT_PASSWORD:+-p$DB_ROOT_PASSWORD} -e \
+      "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '';"
     mysql -u root -e "CREATE DATABASE operationaldb /*\!40100 DEFAULT CHARACTER SET utf8 */;"
     mysql -u root -e "CREATE DATABASE \`edge-node-auth-service\`"
     mysql -u root -e "CREATE DATABASE \`edge-node-api\`;"
@@ -63,11 +64,9 @@ install_mysql() {
     mysql -u root -e "CREATE DATABASE airflow_db;"
     mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '$DB_PASSWORD';"
     mysql -u root -p"$DB_PASSWORD" -e "flush privileges;"
+
     sed -i 's|max_binlog_size|#max_binlog_size|' /etc/mysql/mysql.conf.d/mysqld.cnf
-    echo "disable_log_bin"
     echo -e "disable_log_bin\nwait_timeout = 31536000\ninteractive_timeout = 31536000" >> /etc/mysql/mysql.conf.d/mysqld.cnf
-    echo "REPOSITORY_PASSWORD=otnodedb" >> $OTNODE_DIR/current/.env
-    echo "NODE_ENV=testnet" >> $OTNODE_DIR/current/.env
 
     systemctl daemon-reload
     systemctl enable mysql.service
