@@ -4,6 +4,15 @@ EDGE_NODE_INSTALLER_DIR=$(pwd)
 EDGE_NODE_DIR="$HOME/edge_node"
 OTNODE_DIR="$EDGE_NODE_DIR/ot-node"
 
+# Services
+AUTH_SERVICE=$EDGE_NODE_DIR/edge-node-auth-service/
+API=$EDGE_NODE_DIR/edge-node-api/
+DRAG_API=$EDGE_NODE_DIR/drag-api/
+KA_MINING_API=$EDGE_NODE_DIR/ka-mining-api/
+EDGE_NODE_API=$EDGE_NODE_DIR/edge-node-api/
+EDGE_NODE_UI=/var/www/edge-node-ui/
+
+
 source './common.sh'
 
 # Function to check the Ubuntu version
@@ -25,10 +34,6 @@ check_system_version() {
         exit 1
     fi
 }
-
-
-echo "alias edge-node-restart='systemctl restart auth-service && systemctl restart edge-node-api && systemctl restart ka-mining-api && systemctl restart airflow-scheduler && systemctl restart drag-api'" >> ~/.bashrc
-
 
 install_blazegraph() {
     wget -P $OTNODE_DIR https://github.com/blazegraph/database/releases/latest/download/blazegraph.jar
@@ -61,8 +66,8 @@ install_mysql() {
     sed -i 's|max_binlog_size|#max_binlog_size|' /etc/mysql/mysql.conf.d/mysqld.cnf
     echo "disable_log_bin"
     echo -e "disable_log_bin\nwait_timeout = 31536000\ninteractive_timeout = 31536000" >> /etc/mysql/mysql.conf.d/mysqld.cnf
-    echo "REPOSITORY_PASSWORD=otnodedb" >> /root/ot-node/current/.env
-    echo "NODE_ENV=testnet" >> /root/ot-node/current/.env
+    echo "REPOSITORY_PASSWORD=otnodedb" >> $OTNODE_DIR/current/.env
+    echo "NODE_ENV=testnet" >> $OTNODE_DIR/current/.env
 
     systemctl daemon-reload
     systemctl enable mysql.service
@@ -112,9 +117,7 @@ install_ot_node() {
     echo "NODE_ENV=testnet" >> "$OTNODE_DIR/current/.env"
     
     if [[ $DEPLOYMENT_METHOD = "production" ]]; then
-        cp /root/ot-node/current/installer/data/otnode.service /lib/systemd/system/
-        cd /root/ot-node/current && npm ci --omit=dev --ignore-scripts
-    
+        cp $OTNODE_DIR/current/installer/data/otnode.service /lib/systemd/system/    
         systemctl enable otnode || true
     fi
 }
@@ -175,14 +178,12 @@ setup() {
 
 setup_auth_service() {
     echo "Setting up Authentication Service..."
-    if check_folder "/root/edge-node-auth-service"; then
-        git clone "${repos[edge_node_auth_service]}" /root/edge-node-auth-service
-        cd /root/edge-node-auth-service
+    if check_folder "$AUTH_SERVICE"; then
+        git clone "${repos[edge_node_auth_service]}" $AUTH_SERVICE
+        cd $AUTH_SERVICE
         git checkout main
 
-        # Create the .env file with required variables
-        create_env_file
-        cat <<EOL > /root/edge-node-auth-service/.env
+        cat <<EOL > $AUTH_SERVICE/.env
 SECRET="$(openssl rand -hex 64)"
 JWT_SECRET="$(openssl rand -hex 64)"
 NODE_ENV=development
@@ -203,8 +204,8 @@ EOL
         yes | npx sequelize-cli db:migrate
         yes | npx sequelize-cli db:seed:all
 
-        SQL_FILE="$HOME/edge-node-auth-service/UserConfig.sql"
-        TEMP_SQL_FILE="$HOME/edge-node-auth-service/UserConfig_temp.sql"
+        SQL_FILE="$AUTH_SERVICE/UserConfig.sql"
+        TEMP_SQL_FILE="$AUTH_SERVICE/UserConfig_temp.sql"
 
         # Replace 'localhost' with SERVER_IP in SQL file
         sed "s/localhost/$SERVER_IP/g" "$SQL_FILE" > "$TEMP_SQL_FILE"
@@ -225,9 +226,9 @@ Description=Edge Node Authentication Service
 After=network.target
 
 [Service]
-ExecStart=/root/.nvm/versions/node/v22.9.0/bin/node /root/edge-node-auth-service/index.js
-WorkingDirectory=/root/edge-node-auth-service
-EnvironmentFile=/root/edge-node-auth-service/.env
+ExecStart=$HOME/.nvm/versions/node/v22.9.0/bin/node $AUTH_SERVICE/index.js
+WorkingDirectory=$AUTH_SERVICE
+EnvironmentFile=$AUTH_SERVICE/.env
 Restart=always
 User=root
 Group=root
@@ -245,13 +246,13 @@ EOL
 
 setup_edge_node_api() {
     echo "Setting up API Service..."
-    if check_folder "/root/edge-node-api"; then
-        git clone "${repos[edge_node_api]}" /root/edge-node-api
-        cd /root/edge-node-api
+    if check_folder "$EDGE_NODE_API"; then
+        git clone "${repos[edge_node_api]}" $EDGE_NODE_API
+        cd $EDGE_NODE_API
         git checkout main
 
         # Create the .env file with required variables
-        cat <<EOL > /root/edge-node-api/.env
+        cat <<EOL > $EDGE_NODE_API/.env
 NODE_ENV=development
 DB_USERNAME=$DB_USERNAME
 DB_PASSWORD=$DB_PASSWORD
@@ -283,9 +284,9 @@ Description=Edge Node API Service
 After=network.target
 
 [Service]
-ExecStart=$HOME/.nvm/versions/node/v22.9.0/bin/node /root/edge-node-api/app.js
-WorkingDirectory=$HOME/edge-node-api/
-EnvironmentFile=$HOME/edge-node-api/.env
+ExecStart=$HOME/.nvm/versions/node/v22.9.0/bin/node $EDGE_NODE_API/app.js
+WorkingDirectory=$EDGE_NODE_API/
+EnvironmentFile=$EDGE_NODE_API/.env
 Restart=always
 User=root
 Group=root
@@ -303,13 +304,13 @@ EOL
 setup_edge_node_ui() {
     echo "Setting up Edge Node UI..."
 
-    if check_folder "/var/www/edge-node-ui"; then
-        git clone "${repos[edge_node_interface]}" /var/www/edge-node-ui
-        cd /var/www/edge-node-ui
+    if check_folder "$EDGE_NODE_UI"; then
+        git clone "${repos[edge_node_interface]}" $EDGE_NODE_UI
+        cd $EDGE_NODE_UI
         git checkout main
 
         # Create the .env file with required variables
-        cat <<EOL > /var/www/edge-node-ui/.env
+        cat <<EOL > $EDGE_NODE_UI/.env
 VITE_APP_URL="http://$SERVER_IP"
 VITE_APP_NAME="Edge Node"
 VITE_AUTH_ENABLED=true
@@ -345,13 +346,13 @@ EOL
 setup_drag_api() {
     echo "Setting up dRAG API Service..."
 
-    if check_folder "$HOME/drag-api"; then
-        git clone "${repos[edge_node_drag]}" $HOME/drag-api
-        cd $HOME/drag-api
+    if check_folder "$DRAG_API"; then
+        git clone "${repos[edge_node_drag]}" $DRAG_API
+        cd $DRAG_API
         git checkout main
 
         # Create the .env file with required variables
-        cat <<EOL > $HOME/drag-api/.env
+        cat <<EOL > $DRAG_API/.env
 SERVER_PORT=5002
 NODE_ENV=production
 DB_USER=$DB_USERNAME
@@ -378,9 +379,9 @@ Description=dRAG API Service
 After=network.target
 
 [Service]
-ExecStart=/root/.nvm/versions/node/v22.9.0/bin/node /root/drag-api/server.js
-WorkingDirectory=/root/drag-api
-EnvironmentFile=/root/drag-api/.env
+ExecStart=$HOME/.nvm/versions/node/v22.9.0/bin/node $DRAG_API/server.js
+WorkingDirectory=$DRAG_API
+EnvironmentFile=$DRAG_API/.env
 Restart=always
 User=root
 Group=root
@@ -398,9 +399,9 @@ EOL
 setup_ka_minging_api() {
     echo "Setting up KA Mining API Service..."
 
-    if check_folder "$HOME/ka-mining-api"; then
-        git clone "${repos[edge_node_knowledge_mining]}" $HOME/ka-mining-api
-        cd $HOME/ka-mining-api
+    if check_folder "$KA_MINING_API"; then
+        git clone "${repos[edge_node_knowledge_mining]}" $KA_MINING_API
+        cd $KA_MINING_API
         git checkout main
 
         python3.11 -m venv .venv
@@ -408,14 +409,14 @@ setup_ka_minging_api() {
         pip install -r requirements.txt
 
         # Create the .env file with required variables
-        cat <<EOL > $HOME/ka-mining-api/.env
+        cat <<EOL > $KA_MINING_API/.env
 PORT=5005
 PYTHON_ENV="STAGING"
 DB_USERNAME=$DB_USERNAME
 DB_PASSWORD=$DB_PASSWORD
 DB_HOST="127.0.0.1"
 DB_NAME="ka_mining_api_logging"
-DAG_FOLDER_NAME="$HOME/ka-mining-api/dags"
+DAG_FOLDER_NAME="$EDGE_NODE_DIR/ka-mining-api/dags"
 AUTH_ENDPOINT=http://$SERVER_IP:3001
 
 OPENAI_API_KEY="$OPENAI_API_KEY"
@@ -437,9 +438,9 @@ Description=KA Mining API Service
 After=network.target
 
 [Service]
-ExecStart=$HOME/ka-mining-api/.venv/bin/python $HOME/ka-mining-api/app.py
-WorkingDirectory=$HOME/ka-mining-api
-EnvironmentFile=$HOME/ka-mining-api/.env
+ExecStart=$KA_MINING_API/.venv/bin/python $KA_MINING_API/app.py
+WorkingDirectory=$KA_MINING_API
+EnvironmentFile=$KA_MINING_API/.env
 Restart=always
 User=root
 Group=root
@@ -458,7 +459,7 @@ EOL
 setup_airflow_service() {
     echo "Setting up Airflow Service..."
 
-    cd /root/ka-mining-api/
+    cd $KA_MINING_API
 
     # Initialize the Airflow database
     airflow db init
@@ -490,9 +491,9 @@ Description=Airflow Webserver
 After=network.target
 
 [Service]
-ExecStart=$HOME/ka-mining-api/.venv/bin/airflow webserver --port 8008
-WorkingDirectory=$HOME/ka-mining-api
-EnvironmentFile=$HOME/ka-mining-api/.env
+ExecStart=$KA_MINING_API/.venv/bin/airflow webserver --port 8008
+WorkingDirectory=$KA_MINING_API
+EnvironmentFile=$KA_MINING_API/.env
 Restart=always
 User=root
 Group=root
@@ -504,7 +505,7 @@ EOL
         # Unpause DAGS
         for dag_file in dags/*.py; do
             dag_name=$(basename "$dag_file" .py)
-            $HOME/ka-mining-api/.venv/bin/airflow dags unpause "$dag_name"
+            $KA_MINING_API/.venv/bin/airflow dags unpause "$dag_name"
         done
 
         # Enable and start the service
@@ -517,9 +518,9 @@ Description=Airflow Scheduler
 After=network.target
 
 [Service]
-ExecStart=$HOME/ka-mining-api/.venv/bin/airflow scheduler
-WorkingDirectory=$HOME/ka-mining-api
-Environment="PATH=$HOME/ka-mining-api/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=$KA_MINING_API/.venv/bin/airflow scheduler
+WorkingDirectory=$KA_MINING_API
+Environment="PATH=$KA_MINING_API/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 Restart=always
 User=root
 Group=root
@@ -533,7 +534,7 @@ EOL
     fi
 }
 
-check_service_status() {
+finish_install() {
     # ------- CHECK STATUSES OF ALL SERVICES -------
     systemctl status auth-service.service --no-pager || true
     systemctl status ka-mining-api.service --no-pager || true
@@ -557,6 +558,8 @@ check_service_status() {
     systemctl restart airflow-webserver
     systemctl restart edge-node-api
     systemctl restart auth-service
+
+    echo "alias edge-node-restart='systemctl restart auth-service && systemctl restart edge-node-api && systemctl restart ka-mining-api && systemctl restart airflow-scheduler && systemctl restart drag-api'" >> ~/.bashrc
 }
 
 

@@ -76,5 +76,5 @@ setup_ka_minging_api && \
 setup_airflow_service
 
 if [[ $DEPLOYMENT_METHOD = "development" ]]; then
-    check_service_status
+    finish_install
 fi
