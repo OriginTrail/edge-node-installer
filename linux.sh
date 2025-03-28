@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-EDGE_NODE_DIR="/root/edge-node"
+EDGE_NODE_INSTALLER_DIR=$(pwd)
+EDGE_NODE_DIR="$HOME/edge_node"
+OTNODE_DIR="$EDGE_NODE_DIR/ot-node"
 
 source './common.sh'
 
@@ -31,7 +33,7 @@ echo "alias edge-node-restart='systemctl restart auth-service && systemctl resta
 install_blazegraph() {
     wget -P $OTNODE_DIR https://github.com/blazegraph/database/releases/latest/download/blazegraph.jar
     
-    if [ $DEPLOYMENT_METHOD = "development" ]; then
+    if [ $DEPLOYMENT_METHOD = "production" ]; then
         cp $OTNODE_DIR/current/installer/data/blazegraph.service /lib/systemd/system/
 
         systemctl daemon-reload
@@ -46,6 +48,7 @@ install_blazegraph() {
 
 install_mysql() {
     apt install tcllib mysql-server -y
+
     mysql -u root -p"root" -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '';"
     mysql -u root -e "CREATE DATABASE operationaldb /*\!40100 DEFAULT CHARACTER SET utf8 */;"
     mysql -u root -e "CREATE DATABASE \`edge-node-auth-service\`"
@@ -69,39 +72,51 @@ install_mysql() {
 
 
 install_ot_node() {
-    # Setting up node directory:s
+    check_ot_node_folder
+    
+    # Setting up node directory
     ARCHIVE_REPOSITORY_URL="github.com/OriginTrail/ot-node/archive"
     BRANCH="v6/release/testnet"
-    BRANCH_DIR="/root/ot-node-6-release-testnet"
-    cd /root
+    OT_RELEASE_DIR="ot-node-6-release-testnet"
+    
+    mkdir -p $OTNODE_DIR
+
+    cd $OTNODE_DIR
     wget https://$ARCHIVE_REPOSITORY_URL/$BRANCH.zip
     unzip *.zip
     rm *.zip
-    OTNODE_VERSION=$(jq -r '.version' $BRANCH_DIR/package.json)
-    mkdir $OTNODE_DIR
-    mkdir $OTNODE_DIR/$OTNODE_VERSION
-    mv $BRANCH_DIR/* $OTNODE_DIR/$OTNODE_VERSION/
-    OUTPUT=$(mv $BRANCH_DIR/.* $OTNODE_DIR/$OTNODE_VERSION/ 2>&1)
-    rm -rf $BRANCH_DIR
-    ln -sfn $OTNODE_DIR/$OTNODE_VERSION $OTNODE_DIR/current
 
-    # Ensure the directory exists
-    mkdir -p "$OTNODE_DIR"
+    OTNODE_VERSION=$(jq -r '.version' "$OT_RELEASE_DIR/package.json")
 
-    cd /root/edge-node-installer
-    # Call the function to generate config
+    mkdir -p "$OTNODE_DIR/$OTNODE_VERSION"
+    mv $OT_RELEASE_DIR/* "$OTNODE_DIR/$OTNODE_VERSION/"
+    OUTPUT=$(mv "$OT_RELEASE_DIR"/.* "$OTNODE_DIR/$OTNODE_VERSION" 2>&1)
+    rm -rf "$OT_RELEASE_DIR"
+    ln -sfn "$OTNODE_DIR/$OTNODE_VERSION" "$OTNODE_DIR/current"
+
+    cd $EDGE_NODE_INSTALLER_DIR; 
+
     generate_engine_node_config "$OTNODE_DIR"
     if [[ $? -eq 0 ]]; then
         echo "✅ Blockchain config successfully generated at $OTNODE_DIR"
     else
         echo "❌ Blockchain config generation failed!"
     fi
-    chmod 600 /root/ot-node/.origintrail_noderc
+
+    chmod 600 "$OTNODE_DIR/.origintrail_noderc"
+
+    # Install dependencies
+    cd "$OTNODE_DIR/current" && npm ci --omit=dev --ignore-scripts
+
+    echo "REPOSITORY_PASSWORD=otnodedb" >> "$OTNODE_DIR/current/.env"
+    echo "NODE_ENV=testnet" >> "$OTNODE_DIR/current/.env"
     
-    cp /root/ot-node/current/installer/data/otnode.service /lib/systemd/system/
-    cd /root/ot-node/current && npm ci --omit=dev --ignore-scripts
+    if [ $DEPLOYMENT_METHOD = "production" ]; then
+        cp /root/ot-node/current/installer/data/otnode.service /lib/systemd/system/
+        cd /root/ot-node/current && npm ci --omit=dev --ignore-scripts
     
-    systemctl enable otnode || true
+        systemctl enable otnode || true
+    fi
 }
 
 
@@ -205,7 +220,7 @@ EOL
         echo "User config updated successfully."
     fi;
 
-    if [ $DEPLOYMENT_METHOD = "development" ]; then
+    if [ $DEPLOYMENT_METHOD = "production" ]; then
         cat <<EOL > /etc/systemd/system/auth-service.service
 [Unit]
 Description=Edge Node Authentication Service
@@ -263,7 +278,7 @@ EOL
         npx sequelize-cli db:migrate
     fi
 
-    if [ $DEPLOYMENT_METHOD = "development" ]; then
+    if [ $DEPLOYMENT_METHOD = "production" ]; then
         cat <<EOL > /etc/systemd/system/edge-node-api.service
 [Unit]
 Description=Edge Node API Service
@@ -358,7 +373,7 @@ EOL
         npx sequelize-cli db:migrate
     fi
 
-    if [ $DEPLOYMENT_METHOD = "development" ]; then
+    if [ $DEPLOYMENT_METHOD = "production" ]; then
         cat <<EOL > /etc/systemd/system/drag-api.service
 [Unit]
 Description=dRAG API Service
@@ -380,8 +395,6 @@ EOL
         systemctl start drag-api
     fi
 }
-    
-
 
 
 setup_ka_minging_api() {
@@ -419,7 +432,7 @@ MILVUS_URI="$MILVUS_URI"
 EOL
     fi
 
-    if [ $DEPLOYMENT_METHOD = "development" ]; then
+    if [ $DEPLOYMENT_METHOD = "production" ]; then
         cat <<EOL > /etc/systemd/system/ka-mining-api.service
 [Unit]
 Description=KA Mining API Service
@@ -471,7 +484,7 @@ setup_airflow_service() {
         -e 's|^load_examples *=.*|load_examples = False|' \
         /root/airflow/airflow.cfg
 
-    if [ $DEPLOYMENT_METHOD = "development" ]; then
+    if [ $DEPLOYMENT_METHOD = "production" ]; then
         # AIRFLOW WEBSERVER sytemctl setup
         cat <<EOL > /etc/systemd/system/airflow-webserver.service
 [Unit]
@@ -506,9 +519,9 @@ Description=Airflow Scheduler
 After=network.target
 
 [Service]
-ExecStart=/root/ka-mining-api/.venv/bin/airflow scheduler
-WorkingDirectory=/root/ka-mining-api
-Environment="PATH=/root/ka-mining-api/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=$HOME/ka-mining-api/.venv/bin/airflow scheduler
+WorkingDirectory=$HOME/ka-mining-api
+Environment="PATH=$HOME/ka-mining-api/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 Restart=always
 User=root
 Group=root

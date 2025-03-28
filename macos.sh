@@ -3,9 +3,6 @@
 EDGE_NODE_INSTALLER_DIR=$(pwd)
 EDGE_NODE_DIR="$HOME/edge_node"
 OTNODE_DIR="$EDGE_NODE_DIR/ot-node"
-LAUNCH_AGENT_DIR="$HOME/Library/LaunchAgents"
-
-brew install pkg-config
 
 install_blazegraph() {
     BLAZEGRAPH_DIR="$OTNODE_DIR/blazegraph"
@@ -45,8 +42,6 @@ install_mysql() {
 
 install_ot_node() {
     check_ot_node_folder
-
-    SERVICE="com.origintrail.otnode"
     
     # Setting up node directory
     ARCHIVE_REPOSITORY_URL="github.com/OriginTrail/ot-node/archive"
@@ -100,11 +95,16 @@ setup() {
     brew install make openssl readline \
       sqlite3 wget unzip curl jq \
       llvm tk git pkg-config python3 \
-      openjdk redis mysql
+      openjdk mysql pkg-config
 
-    # # # Start Redis
-    # TODO: Not sure if needed. Seems like REDIS starts automatically after installation
-    # brew services start redis
+    # Start Redis
+    brew install redis
+    RESPONSE=$(redis-cli ping)
+    if [ "$RESPONSE" == "PONG" ]; then
+        echo "Redis is up and running."
+    else
+        echo "Failed to receive PONG from Redis."
+    fi
 
     #Install Node.js via NVM
     if ! command -v nvm &>/dev/null; then
