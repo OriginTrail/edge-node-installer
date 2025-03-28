@@ -9,9 +9,14 @@ else
 fi
 
 OS=$(uname -s)
+SERVER_IP="127.0.01"
 if [[ "$OS" == "Darwin" ]]; then
     echo "Detected macOS"
     source './macos.sh'
+
+    if [[ $DEPLOYMENT_METHOD = "production" ]]; then
+        SERVER_IP=$(ipconfig getifaddr en0)
+    fi
 
 elif [[ "$OS" == "Linux" ]]; then
     echo "Detected Linux"
@@ -22,10 +27,13 @@ elif [[ "$OS" == "Linux" ]]; then
         exit 1
     fi
 
+    if [[ $DEPLOYMENT_METHOD = "production" ]]; then
+        SERVER_IP=$(hostname -I | awk '{print $1}')
+    fi
+
     source './linux.sh'
     check_system_version
    
-    
 else
     echo "Unsupported OS: $OS"
     exit 1
@@ -57,9 +65,6 @@ if [[ -n "$REPOSITORY_USER" && -n "$REPOSITORY_AUTH" ]]; then
   done
 fi
 
-# Export server IP
-
-
 # ####### todo: Update ot-node branch
 # ####### todo: Replace add .env variables to .origintrail_noderc
 setup
@@ -70,6 +75,6 @@ setup_drag_api && \
 setup_ka_minging_api && \
 setup_airflow_service
 
-# if [ $DEPLOYMENT_METHOD = "development" ]; then
-#     check_service_status
-# fi
+if [[ $DEPLOYMENT_METHOD = "development" ]]; then
+    check_service_status
+fi

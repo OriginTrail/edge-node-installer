@@ -190,8 +190,8 @@ EOL
         yes | npx sequelize-cli db:migrate
         yes | npx sequelize-cli db:seed:all
 
-        SQL_FILE="/root/edge-node-auth-service/UserConfig.sql"
-        TEMP_SQL_FILE="/root/edge-node-auth-service/UserConfig_temp.sql"
+        SQL_FILE="$HOME/edge-node-auth-service/UserConfig.sql"
+        TEMP_SQL_FILE="$HOME/edge-node-auth-service/UserConfig_temp.sql"
 
         # Replace 'localhost' with SERVER_IP in SQL file
         sed "s/localhost/$SERVER_IP/g" "$SQL_FILE" > "$TEMP_SQL_FILE"
