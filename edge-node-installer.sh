@@ -8,13 +8,13 @@ else
   exit 1
 fi
 
+SERVER_IP="127.0.0.1"
 OS=$(uname -s)
-SERVER_IP="127.0.01"
 if [[ "$OS" == "Darwin" ]]; then
     echo "Detected macOS"
     source './macos.sh'
 
-    if [[ $DEPLOYMENT_METHOD = "production" ]]; then
+    if [[ $DEPLOYMENT_MODE = "production" ]]; then
         SERVER_IP=$(ipconfig getifaddr en0)
     fi
 
@@ -27,7 +27,7 @@ elif [[ "$OS" == "Linux" ]]; then
         exit 1
     fi
 
-    if [[ $DEPLOYMENT_METHOD = "production" ]]; then
+    if [[ $DEPLOYMENT_MODE = "production" ]]; then
         SERVER_IP=$(hostname -I | awk '{print $1}')
     fi
 
@@ -75,6 +75,6 @@ setup_drag_api && \
 setup_ka_minging_api && \
 setup_airflow_service
 
-if [[ $DEPLOYMENT_METHOD = "development" ]]; then
+if [[ $DEPLOYMENT_MODE = "development" ]]; then
     finish_install
 fi

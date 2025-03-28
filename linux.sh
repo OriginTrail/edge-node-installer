@@ -40,7 +40,7 @@ install_blazegraph() {
     mkdir -p "$BLAZEGRAPH_DIR"
     wget -O "$BLAZEGRAPH_DIR/blazegraph.jar" https://github.com/blazegraph/database/releases/latest/download/blazegraph.jar
     
-    if [[ $DEPLOYMENT_METHOD = "production" ]]; then
+    if [[ $DEPLOYMENT_MODE = "production" ]]; then
         cp $OTNODE_DIR/current/installer/data/blazegraph.service /lib/systemd/system/
 
         systemctl daemon-reload
@@ -117,7 +117,7 @@ install_ot_node() {
     echo "REPOSITORY_PASSWORD=otnodedb" >> "$OTNODE_DIR/current/.env"
     echo "NODE_ENV=testnet" >> "$OTNODE_DIR/current/.env"
     
-    if [[ $DEPLOYMENT_METHOD = "production" ]]; then
+    if [[ $DEPLOYMENT_MODE = "production" ]]; then
         cp $OTNODE_DIR/current/installer/data/otnode.service /lib/systemd/system/    
         systemctl enable otnode || true
     fi
@@ -220,7 +220,7 @@ EOL
         echo "User config updated successfully."
     fi;
 
-    if [[ $DEPLOYMENT_METHOD = "production" ]]; then
+    if [[ $DEPLOYMENT_MODE = "production" ]]; then
         cat <<EOL > /etc/systemd/system/auth-service.service
 [Unit]
 Description=Edge Node Authentication Service
@@ -278,7 +278,7 @@ EOL
         npx sequelize-cli db:migrate
     fi
 
-    if [[ $DEPLOYMENT_METHOD = "production" ]]; then
+    if [[ $DEPLOYMENT_MODE = "production" ]]; then
         cat <<EOL > /etc/systemd/system/edge-node-api.service
 [Unit]
 Description=Edge Node API Service
@@ -373,7 +373,7 @@ EOL
         npx sequelize-cli db:migrate
     fi
 
-    if [[ $DEPLOYMENT_METHOD = "production" ]]; then
+    if [[ $DEPLOYMENT_MODE = "production" ]]; then
         cat <<EOL > /etc/systemd/system/drag-api.service
 [Unit]
 Description=dRAG API Service
@@ -432,7 +432,7 @@ MILVUS_URI="$MILVUS_URI"
 EOL
     fi
 
-    if [[ $DEPLOYMENT_METHOD = "production" ]]; then
+    if [[ $DEPLOYMENT_MODE = "production" ]]; then
         cat <<EOL > /etc/systemd/system/ka-mining-api.service
 [Unit]
 Description=KA Mining API Service
@@ -484,7 +484,7 @@ setup_airflow_service() {
         -e 's|^load_examples *=.*|load_examples = False|' \
         /root/airflow/airflow.cfg
 
-    if [[ $DEPLOYMENT_METHOD = "production" ]]; then
+    if [[ $DEPLOYMENT_MODE = "production" ]]; then
         # AIRFLOW WEBSERVER sytemctl setup
         cat <<EOL > /etc/systemd/system/airflow-webserver.service
 [Unit]
