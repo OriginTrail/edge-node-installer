@@ -43,10 +43,13 @@ check_system_version() {
 }
 
 install_blazegraph() {
-    wget -O "$OTNODE_DIR/blazegraph.jar" https://github.com/blazegraph/database/releases/latest/download/blazegraph.jar
+    BLAZEGRAPH_DIR="$OTNODE_DIR/blazegraph"
+    mkdir -p "$BLAZEGRAPH_DIR"
+    wget -O "$BLAZEGRAPH_DIR/blazegraph.jar" https://github.com/blazegraph/database/releases/latest/download/blazegraph.jar
     
     if [[ $DEPLOYMENT_MODE = "production" ]]; then
         cp $OTNODE_DIR/current/installer/data/blazegraph.service /lib/systemd/system/
+        sed -i "s|ExecStart=.*|ExecStart=/usr/bin/java -jar ${OTNODE_DIR}/blazegraph/blazegraph.jar|" /lib/systemd/system/blazegraph.service
 
         systemctl daemon-reload
         systemctl enable blazegraph.service
@@ -121,6 +124,9 @@ install_ot_node() {
 
     echo "REPOSITORY_PASSWORD=otnodedb" >> "$OTNODE_DIR/current/.env"
     echo "NODE_ENV=testnet" >> "$OTNODE_DIR/current/.env"
+
+
+    echo "DEPLOYMENT MODE:::::: " $DEPLOYMENT_MODE
     
     if [[ $DEPLOYMENT_MODE = "production" ]]; then
         cp $OTNODE_DIR/current/installer/data/otnode.service /lib/systemd/system/    
@@ -567,7 +573,3 @@ finish_install() {
 
     echo "alias edge-node-restart='systemctl restart auth-service && systemctl restart edge-node-api && systemctl restart ka-mining-api && systemctl restart airflow-scheduler && systemctl restart drag-api'" >> ~/.bashrc
 }
-
-
-
-
