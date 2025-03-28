@@ -1,19 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 EDGE_NODE_INSTALLER_DIR=$(pwd)
 EDGE_NODE_DIR="$HOME/edge_node"
 OTNODE_DIR="$EDGE_NODE_DIR/ot-node"
 LAUNCH_AGENT_DIR="$HOME/Library/LaunchAgents"
 
-SHELL_RC="$HOME/.zshrc"
-if [[ "$SHELL" == "/bin/bash" ]]; then
-    SHELL_RC="$HOME/.bashrc"
-fi
-
-
 brew install pkg-config
-
-source './common.sh'
 
 install_blazegraph() {
     BLAZEGRAPH_DIR="$OTNODE_DIR/blazegraph"
@@ -52,6 +44,8 @@ install_mysql() {
 }
 
 install_ot_node() {
+    check_ot_node_folder
+
     SERVICE="com.origintrail.otnode"
     
     # Setting up node directory
@@ -94,16 +88,10 @@ install_ot_node() {
 
 
 setup() {
-    echo "alias otnode-restart='launchctl kickstart -k user/$(id -u)/com.otnode'" >> "$SHELL_RC"
-    echo "alias otnode-stop='launchctl unload $HOME/Library/LaunchAgents/com.otnode.plist'" >> "$SHELL_RC"
-    echo "alias otnode-start='launchctl load $HOME/Library/LaunchAgents/com.otnode.plist'" >> "$SHELL_RC"
-    echo "alias otnode-logs='tail -f $HOME/ot-node/otnode.log'" >> "$SHELL_RC"
-    echo "alias otnode-config='nano $HOME/ot-node/.origintrail_noderc'" >> "$SHELL_RC"
-
     # Install Homebrew if not installed
     if ! command -v brew &>/dev/null; then
         echo "Installing Homebrew..."
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        /usr/bin/env bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
 
     # Updating Homebrew and installing dependencies
@@ -118,13 +106,16 @@ setup() {
     # TODO: Not sure if needed. Seems like REDIS starts automatically after installation
     # brew services start redis
 
-    # Install Node.js via NVM
+    #Install Node.js via NVM
     if ! command -v nvm &>/dev/null; then
         echo "Installing NVM..."
         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
         export NVM_DIR="$HOME/.nvm"
         [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
         [ -s "$NVM_DIR/bash_completion" ] && source "$NVM_DIR/bash_completion"
+
+        echo source "$NVM_DIR/nvm.sh" >> "$HOME/.bashrc"
+        echo source "$NVM_DIR/bash_completion" >> "$HOME/.bashrc"
     fi
 
     nvm install 22.9.0
@@ -152,7 +143,6 @@ setup_auth_service() {
         git checkout main
 
         # Create the .env file with required variables
-        create_env_file
         cat <<EOL > "$AUTH_SERVICE_DIR/.env"
 SECRET="$(openssl rand -hex 64)"
 JWT_SECRET="$(openssl rand -hex 64)"

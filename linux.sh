@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 EDGE_NODE_DIR="/root/edge-node"
 
