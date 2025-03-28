@@ -36,9 +36,7 @@ check_system_version() {
 }
 
 install_blazegraph() {
-    BLAZEGRAPH_DIR="$OTNODE_DIR/blazegraph"
-    mkdir -p "$BLAZEGRAPH_DIR"
-    wget -O "$BLAZEGRAPH_DIR/blazegraph.jar" https://github.com/blazegraph/database/releases/latest/download/blazegraph.jar
+    wget -O "$OTNODE_DIR/blazegraph.jar" https://github.com/blazegraph/database/releases/latest/download/blazegraph.jar
     
     if [[ $DEPLOYMENT_MODE = "production" ]]; then
         cp $OTNODE_DIR/current/installer/data/blazegraph.service /lib/systemd/system/
