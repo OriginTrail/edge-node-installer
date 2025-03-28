@@ -12,6 +12,13 @@ KA_MINING_API=$EDGE_NODE_DIR/ka-mining-api/
 EDGE_NODE_API=$EDGE_NODE_DIR/edge-node-api/
 EDGE_NODE_UI=/var/www/edge-node-ui/
 
+# Load the configuration variables
+if [ -f .env ]; then
+  source .env
+else
+  echo "Config file not found!"
+  exit 1
+fi
 
 source './common.sh'
 
