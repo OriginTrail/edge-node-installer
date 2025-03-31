@@ -47,14 +47,13 @@ install_blazegraph() {
     mkdir -p "$BLAZEGRAPH_DIR"
     wget -O "$BLAZEGRAPH_DIR/blazegraph.jar" https://github.com/blazegraph/database/releases/latest/download/blazegraph.jar
     
-    if [[ $DEPLOYMENT_MODE = "production" ]]; then
+    if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
         cp $OTNODE_DIR/current/installer/data/blazegraph.service /lib/systemd/system/
         sed -i "s|ExecStart=.*|ExecStart=/usr/bin/java -jar ${OTNODE_DIR}/blazegraph/blazegraph.jar|" /lib/systemd/system/blazegraph.service
 
         systemctl daemon-reload
-        systemctl enable blazegraph.service
-        systemctl start blazegraph.service
-        systemctl status blazegraph.service --no-pager || true
+        systemctl enable blazegraph
+        systemctl start blazegraph
     fi
 
     echo "✅ Blazegraph checked. Continuing execution..."
@@ -79,9 +78,8 @@ install_mysql() {
     echo -e "disable_log_bin\nwait_timeout = 31536000\ninteractive_timeout = 31536000" >> /etc/mysql/mysql.conf.d/mysqld.cnf
 
     systemctl daemon-reload
-    systemctl enable mysql.service
-    systemctl start mysql.service
-    systemctl status mysql.service --no-pager || true
+    systemctl enable mysql
+    systemctl start mysql
 }
 
 
@@ -124,13 +122,14 @@ install_ot_node() {
 
     echo "REPOSITORY_PASSWORD=otnodedb" >> "$OTNODE_DIR/current/.env"
     echo "NODE_ENV=testnet" >> "$OTNODE_DIR/current/.env"
-
-
-    echo "DEPLOYMENT MODE:::::: " $DEPLOYMENT_MODE
     
-    if [[ $DEPLOYMENT_MODE = "production" ]]; then
-        cp $OTNODE_DIR/current/installer/data/otnode.service /lib/systemd/system/    
-        systemctl enable otnode || true
+    if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
+        cp $OTNODE_DIR/current/installer/data/otnode.service /etc/systemd/system
+
+        systemctl daemon-reload
+        systemctl enable otnode.service
+        systemctl start otnode.service
+        systemctl status otnode.service --no-pager
     fi
 }
 
@@ -231,7 +230,7 @@ EOL
         echo "User config updated successfully."
     fi;
 
-    if [[ $DEPLOYMENT_MODE = "production" ]]; then
+    if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
         cat <<EOL > /etc/systemd/system/auth-service.service
 [Unit]
 Description=Edge Node Authentication Service
@@ -289,7 +288,7 @@ EOL
         npx sequelize-cli db:migrate
     fi
 
-    if [[ $DEPLOYMENT_MODE = "production" ]]; then
+    if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
         cat <<EOL > /etc/systemd/system/edge-node-api.service
 [Unit]
 Description=Edge Node API Service
@@ -308,8 +307,8 @@ WantedBy=multi-user.target
 EOL
 
         systemctl daemon-reload
-        systemctl enable edge-node-api.service
-        systemctl start edge-node-api.service
+        systemctl enable edge-node-api
+        systemctl start edge-node-api
     fi
 }
 
@@ -384,7 +383,7 @@ EOL
         npx sequelize-cli db:migrate
     fi
 
-    if [[ $DEPLOYMENT_MODE = "production" ]]; then
+    if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
         cat <<EOL > /etc/systemd/system/drag-api.service
 [Unit]
 Description=dRAG API Service
@@ -402,8 +401,10 @@ Group=root
 WantedBy=multi-user.target
 EOL
 
+        systemctl daemon-reload
         systemctl enable drag-api
         systemctl start drag-api
+        systemctl status drag-api --no-pager
     fi
 }
 
@@ -443,7 +444,7 @@ MILVUS_URI="$MILVUS_URI"
 EOL
     fi
 
-    if [[ $DEPLOYMENT_MODE = "production" ]]; then
+    if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
         cat <<EOL > /etc/systemd/system/ka-mining-api.service
 [Unit]
 Description=KA Mining API Service
@@ -495,7 +496,7 @@ setup_airflow_service() {
         -e 's|^load_examples *=.*|load_examples = False|' \
         /root/airflow/airflow.cfg
 
-    if [[ $DEPLOYMENT_MODE = "production" ]]; then
+    if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
         # AIRFLOW WEBSERVER sytemctl setup
         cat <<EOL > /etc/systemd/system/airflow-webserver.service
 [Unit]
@@ -520,10 +521,6 @@ EOL
             $KA_MINING_API/.venv/bin/airflow dags unpause "$dag_name"
         done
 
-        # Enable and start the service
-        systemctl enable airflow-webserver
-        systemctl start airflow-webserver
-
     cat <<EOL > /etc/systemd/system/airflow-scheduler.service
 [Unit]
 Description=Airflow Scheduler
@@ -541,19 +538,15 @@ Group=root
 WantedBy=multi-user.target
 EOL
 
+        systemctl daemon-reload
+        systemctl enable airflow-webserver
+        systemctl start airflow-webserver
         systemctl enable airflow-scheduler
         systemctl start airflow-scheduler
     fi
 }
 
 finish_install() {
-    # ------- CHECK STATUSES OF ALL SERVICES -------
-    systemctl status auth-service.service --no-pager || true
-    systemctl status ka-mining-api.service --no-pager || true
-    systemctl status airflow-webserver --no-pager || true
-    systemctl status airflow-scheduler --no-pager || true
-    systemctl status drag-api.service --no-pager || true
-    systemctl status otnode --no-pager || true
     source ~/.bashrc
     echo "======== RESTARTING SERVICES ==========="
     sleep 10
@@ -570,6 +563,14 @@ finish_install() {
     systemctl restart airflow-webserver
     systemctl restart edge-node-api
     systemctl restart auth-service
+
+    # ------- CHECK STATUSES OF ALL SERVICES -------
+    systemctl status auth-service.service --no-pager || true
+    systemctl status ka-mining-api.service --no-pager || true
+    systemctl status airflow-webserver --no-pager || true
+    systemctl status airflow-scheduler --no-pager || true
+    systemctl status drag-api.service --no-pager || true
+    systemctl status otnode --no-pager || true
 
     echo "alias edge-node-restart='systemctl restart auth-service && systemctl restart edge-node-api && systemctl restart ka-mining-api && systemctl restart airflow-scheduler && systemctl restart drag-api'" >> ~/.bashrc
 }
