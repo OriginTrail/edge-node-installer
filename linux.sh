@@ -50,7 +50,7 @@ install_blazegraph() {
     
     if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
         sed -i "s|ExecStart=.*|ExecStart=/usr/bin/java -jar ${OTNODE_DIR}/blazegraph/blazegraph.jar|" ${SERVICE}
-        sed -i '//d' ./infile
+        sed -i "s|WorkingDirectory=.*|WorkingDirectory=${OTNODE_DIR}/blazegraph" ${SERVICE}
 
         cp ${SERVICE} /etc/systemd/system/
 
