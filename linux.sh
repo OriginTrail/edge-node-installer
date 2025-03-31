@@ -49,6 +49,7 @@ install_blazegraph() {
     SERVICE=${OTNODE_DIR}/current/installer/data/blazegraph.service
     
     if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
+        
         sed -i "s|ExecStart=.*|ExecStart=/usr/bin/java -jar ${OTNODE_DIR}/blazegraph/blazegraph.jar|" ${SERVICE}
         sed -i "s|WorkingDirectory=.*|WorkingDirectory=${OTNODE_DIR}/blazegraph|" ${SERVICE}
 
@@ -128,7 +129,8 @@ install_otnode() {
     echo "NODE_ENV=testnet" >> "$OTNODE_DIR/current/.env"
     
     if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
-        sed -E "s|^WorkingDirectory=.*|WorkingDirectory=${OTNODE_DIR}|" -i ${SERVICE}
+        sed -i "s|ExecStart=.*|ExecStart=/usr/bin/node ${OTNODE_DIR}/current/index.js|" ${SERVICE}
+        sed -E "s|^WorkingDirectory=.*|WorkingDirectory=${OTNODE_DIR}/current|" -i ${SERVICE}
         cp  ${SERVICE} /etc/systemd/system
 
         systemctl daemon-reload
