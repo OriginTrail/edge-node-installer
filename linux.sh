@@ -50,7 +50,7 @@ install_blazegraph() {
     
     if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
         sed -i "s|ExecStart=.*|ExecStart=/usr/bin/java -jar ${OTNODE_DIR}/blazegraph/blazegraph.jar|" ${SERVICE}
-        sed -i "s|WorkingDirectory=.*|WorkingDirectory=${OTNODE_DIR}/blazegraph" ${SERVICE}
+        sed -i "s|WorkingDirectory=.*|WorkingDirectory=${OTNODE_DIR}/blazegraph|" ${SERVICE}
 
         cp ${SERVICE} /etc/systemd/system/
 
@@ -93,6 +93,7 @@ install_otnode() {
     ARCHIVE_REPOSITORY_URL="github.com/OriginTrail/ot-node/archive"
     BRANCH="v6/release/testnet"
     OT_RELEASE_DIR="ot-node-6-release-testnet"
+    SERVICE="${OTNODE_DIR}/current/installer/data/otnode.service"
     
     mkdir -p $OTNODE_DIR
 
@@ -127,12 +128,12 @@ install_otnode() {
     echo "NODE_ENV=testnet" >> "$OTNODE_DIR/current/.env"
     
     if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
-        cp $OTNODE_DIR/current/installer/data/otnode.service /etc/systemd/system
+        sed -i "s|WorkingDirectory=.*|WorkingDirectory=${OTNODE_DIR}/blazegraph" ${SERVICE}
+        cp  ${SERVICE} /etc/systemd/system
 
         systemctl daemon-reload
         systemctl enable otnode.service
         systemctl start otnode.service
-        systemctl status otnode.service --no-pager
     fi
 }
 
