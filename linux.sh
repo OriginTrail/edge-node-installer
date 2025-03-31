@@ -46,10 +46,11 @@ install_blazegraph() {
     BLAZEGRAPH_DIR="$OTNODE_DIR/blazegraph"
     mkdir -p "$BLAZEGRAPH_DIR"
     wget -O "$BLAZEGRAPH_DIR/blazegraph.jar" https://github.com/blazegraph/database/releases/latest/download/blazegraph.jar
+    SERVICE=${OTNODE_DIR}/current/installer/data/blazegraph.service
     
     if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
-        cp $OTNODE_DIR/current/installer/data/blazegraph.service /lib/systemd/system/
-        sed -i "s|ExecStart=.*|ExecStart=/usr/bin/java -jar ${OTNODE_DIR}/blazegraph/blazegraph.jar|" /lib/systemd/system/blazegraph.service
+        sed -i "s|ExecStart=.*|ExecStart=/usr/bin/java -jar ${OTNODE_DIR}/blazegraph/blazegraph.jar|" ${SERVICE}
+        cp ${SERVICE} /etc/systemd/system/
 
         systemctl daemon-reload
         systemctl enable blazegraph
@@ -488,13 +489,13 @@ setup_airflow_service() {
 
     # Configure Airflow settings in the airflow.cfg file
     sed -i \
-        -e 's|^dags_folder *=.*|dags_folder = /root/ka-mining-api/dags|' \
+        -e 's|^dags_folder *=.*|dags_folder = '${KA_MINING_API}'/dags|' \
         -e 's|^parallelism *=.*|parallelism = 32|' \
         -e 's|^max_active_tasks_per_dag *=.*|max_active_tasks_per_dag = 16|' \
         -e 's|^max_active_runs_per_dag *=.*|max_active_runs_per_dag = 16|' \
         -e 's|^enable_xcom_pickling *=.*|enable_xcom_pickling = True|' \
         -e 's|^load_examples *=.*|load_examples = False|' \
-        /root/airflow/airflow.cfg
+        $KA_MINING_API/airflow/airflow.cfg
 
     if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
         # AIRFLOW WEBSERVER sytemctl setup
