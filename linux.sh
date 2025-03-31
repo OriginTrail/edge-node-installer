@@ -476,6 +476,8 @@ EOL
 setup_airflow_service() {
     echo "Setting up Airflow Service..."
 
+    export AIRFLOW_HOME="$EDGE_NODE_DIR/airflow"
+
     cd $KA_MINING_API
 
     # Initialize the Airflow database
@@ -498,7 +500,7 @@ setup_airflow_service() {
         -e 's|^max_active_runs_per_dag *=.*|max_active_runs_per_dag = 16|' \
         -e 's|^enable_xcom_pickling *=.*|enable_xcom_pickling = True|' \
         -e 's|^load_examples *=.*|load_examples = False|' \
-        $KA_MINING_API/airflow/airflow.cfg
+        $AIRFLOW_HOME/airflow.cfg
 
     if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
         # AIRFLOW WEBSERVER sytemctl setup
