@@ -75,6 +75,6 @@ setup_drag_api && \
 setup_ka_minging_api && \
 setup_airflow_service
 
-if [[ $DEPLOYMENT_MODE = "development" ]]; then
+if [[ $DEPLOYMENT_MODE = "production" ]]; then
     finish_install
 fi

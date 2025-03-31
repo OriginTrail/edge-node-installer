@@ -128,7 +128,7 @@ install_otnode() {
     echo "NODE_ENV=testnet" >> "$OTNODE_DIR/current/.env"
     
     if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
-        sed -i "s|WorkingDirectory=.*|WorkingDirectory=${OTNODE_DIR}/blazegraph" ${SERVICE}
+        sed -E "s|^WorkingDirectory=.*|WorkingDirectory=${OTNODE_DIR}|" -i ${SERVICE}
         cp  ${SERVICE} /etc/systemd/system
 
         systemctl daemon-reload
@@ -553,7 +553,6 @@ EOL
 }
 
 finish_install() {
-    source ~/.bashrc
     echo "======== RESTARTING SERVICES ==========="
     sleep 10
     systemctl is-enabled otnode.service
@@ -579,4 +578,5 @@ finish_install() {
     systemctl status otnode --no-pager || true
 
     echo "alias edge-node-restart='systemctl restart auth-service && systemctl restart edge-node-api && systemctl restart ka-mining-api && systemctl restart airflow-scheduler && systemctl restart drag-api'" >> ~/.bashrc
+    source ~/.bashrc
 }
