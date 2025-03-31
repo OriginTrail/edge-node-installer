@@ -5,12 +5,12 @@ EDGE_NODE_DIR="$HOME/edge_node"
 OTNODE_DIR="$EDGE_NODE_DIR/ot-node"
 
 # Services
-AUTH_SERVICE=$EDGE_NODE_DIR/edge-node-auth-service/
-API=$EDGE_NODE_DIR/edge-node-api/
-DRAG_API=$EDGE_NODE_DIR/drag-api/
-KA_MINING_API=$EDGE_NODE_DIR/ka-mining-api/
-EDGE_NODE_API=$EDGE_NODE_DIR/edge-node-api/
-EDGE_NODE_UI=/var/www/edge-node-ui/
+AUTH_SERVICE=$EDGE_NODE_DIR/edge-node-auth-service
+API=$EDGE_NODE_DIR/edge-node-api
+DRAG_API=$EDGE_NODE_DIR/drag-api
+KA_MINING_API=$EDGE_NODE_DIR/ka-mining-api
+EDGE_NODE_API=$EDGE_NODE_DIR/edge-node-api
+EDGE_NODE_UI=/var/www/edge-node-ui
 
 # Load the configuration variables
 if [ -f .env ]; then
@@ -50,6 +50,8 @@ install_blazegraph() {
     
     if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
         sed -i "s|ExecStart=.*|ExecStart=/usr/bin/java -jar ${OTNODE_DIR}/blazegraph/blazegraph.jar|" ${SERVICE}
+        sed -i '//d' ./infile
+
         cp ${SERVICE} /etc/systemd/system/
 
         systemctl daemon-reload
@@ -84,7 +86,7 @@ install_mysql() {
 }
 
 
-install_ot_node() {
+install_otnode() {
     check_ot_node_folder
     
     # Setting up node directory
@@ -182,7 +184,7 @@ setup() {
     ln -s $(which npm) /usr/bin/ > /dev/null 2>&1
 
     install_python
-    install_ot_node
+    install_otnode
     install_blazegraph
     install_mysql
 }

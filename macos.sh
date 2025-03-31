@@ -4,6 +4,15 @@ EDGE_NODE_INSTALLER_DIR=$(pwd)
 EDGE_NODE_DIR="$HOME/edge_node"
 OTNODE_DIR="$EDGE_NODE_DIR/ot-node"
 
+# Services
+AUTH_SERVICE=$EDGE_NODE_DIR/edge-node-auth-service
+API=$EDGE_NODE_DIR/edge-node-api
+DRAG_API=$EDGE_NODE_DIR/drag-api
+KA_MINING_API=$EDGE_NODE_DIR/ka-mining-api
+EDGE_NODE_API=$EDGE_NODE_DIR/edge-node-api
+EDGE_NODE_UI=/var/www/edge-node-ui
+
+
 install_blazegraph() {
     BLAZEGRAPH_DIR="$OTNODE_DIR/blazegraph"
     mkdir -p "$BLAZEGRAPH_DIR"
@@ -40,7 +49,7 @@ install_mysql() {
     fi
 }
 
-install_ot_node() {
+install_otnode() {
     check_ot_node_folder
     
     # Setting up node directory
@@ -120,7 +129,7 @@ setup() {
     nvm alias default 20.18.2
 
     install_python
-    install_ot_node
+    install_otnode
     install_blazegraph
     install_mysql
 
@@ -130,16 +139,14 @@ setup() {
 
 setup_auth_service() {
     echo "Setting up Authentication Service..."
-    
-    AUTH_SERVICE_DIR="$EDGE_NODE_DIR/edge-node-auth-service"
 
-    if check_folder "$AUTH_SERVICE_DIR"; then
-        git clone "${repos[edge_node_auth_service]}" "$AUTH_SERVICE_DIR"
-        cd "$AUTH_SERVICE_DIR"
+    if check_folder "$AUTH_SERVICE"; then
+        git clone "${repos[edge_node_auth_service]}" "$AUTH_SERVICE"
+        cd "$AUTH_SERVICE"
         git checkout main
 
         # Create the .env file with required variables
-        cat <<EOL > "$AUTH_SERVICE_DIR/.env"
+        cat <<EOL > "$AUTH_SERVICE/.env"
 SECRET="$(openssl rand -hex 64)"
 JWT_SECRET="$(openssl rand -hex 64)"
 NODE_ENV=development
@@ -160,8 +167,8 @@ EOL
         yes | npx sequelize-cli db:migrate
         yes | npx sequelize-cli db:seed:all
 
-        SQL_FILE="$AUTH_SERVICE_DIR/UserConfig.sql"
-        TEMP_SQL_FILE="$AUTH_SERVICE_DIR/UserConfig_temp.sql"
+        SQL_FILE="$AUTH_SERVICE/UserConfig.sql"
+        TEMP_SQL_FILE="$AUTH_SERVICE/UserConfig_temp.sql"
 
         # Replace 'localhost' with SERVER_IP in SQL file
         sed "s/localhost/$SERVER_IP/g" "$SQL_FILE" > "$TEMP_SQL_FILE"
@@ -179,16 +186,14 @@ EOL
 
 setup_edge_node_api() {
     echo "Setting up API Service..."
-    
-    API_SERVICE_DIR="$EDGE_NODE_DIR/edge-node-api"
 
-    if check_folder "$API_SERVICE_DIR"; then
-        git clone "${repos[edge_node_api]}" "$API_SERVICE_DIR"
-        cd "$API_SERVICE_DIR"
+    if check_folder "$API_SERVICE"; then
+        git clone "${repos[edge_node_api]}" "$API_SERVICE"
+        cd "$API_SERVICE"
         git checkout main
 
         # Create the .env file with required variables
-        cat <<EOL > "$API_SERVICE_DIR/.env"
+        cat <<EOL > "$API_SERVICE/.env"
 NODE_ENV=development
 DB_USERNAME=$DB_USERNAME
 DB_PASSWORD=$DB_PASSWORD
@@ -217,16 +222,13 @@ EOL
 setup_edge_node_ui() {
     echo "Setting up Edge Node UI..."
 
-    # Define the target directory
-    TARGET_DIR="$EDGE_NODE_DIR/edge-node-ui"
-
-    if [ ! -d "$TARGET_DIR" ]; then
-        git clone "${repos[edge_node_interface]}" "$TARGET_DIR"
-        cd "$TARGET_DIR" || exit
+    if [ ! -d "$EDGE_NODE_UI" ]; then
+        git clone "${repos[edge_node_interface]}" "$EDGE_NODE_UI"
+        cd "$EDGE_NODE_UI" || exit
         git checkout main
 
         # Create the .env file with required variables
-        cat <<EOL > "$TARGET_DIR/.env"
+        cat <<EOL > "$EDGE_NODE_UI/.env"
 VITE_APP_URL="http://$SERVER_IP"
 VITE_APP_NAME="Edge Node"
 VITE_AUTH_ENABLED=true
@@ -264,7 +266,7 @@ http {
         server_name localhost;
 
         location / {
-            root $TARGET_DIR/dist;
+            root $EDGE_NODE_UI/dist;
             index index.html;
             try_files \$uri \$uri/ /index.html;
         }
@@ -280,15 +282,13 @@ EOL
 setup_drag_api() {
     echo "Setting up dRAG API Service..."
 
-    DRAG_API_DIR="$EDGE_NODE_DIR/drag-api"
-
-    if check_folder "$DRAG_API_DIR"; then
-        git clone "${repos[edge_node_drag]}" "$DRAG_API_DIR"
-        cd "$DRAG_API_DIR"
+    if check_folder "$DRAG_API"; then
+        git clone "${repos[edge_node_drag]}" "$DRAG_API"
+        cd "$DRAG_API"
         git checkout main
 
         # Create the .env file with required variables
-        cat <<EOL > "$DRAG_API_DIR/.env"
+        cat <<EOL > "$DRAG_API/.env"
 SERVER_PORT=5002
 NODE_ENV=production
 DB_USER=$DB_USERNAME
@@ -313,11 +313,9 @@ EOL
 setup_ka_mining_api() {
     echo "Setting up KA Mining API Service..."
 
-    KA_MINING_API_DIR="$EDGE_NODE_DIR/ka-mining-api"
-
-    if check_folder "$KA_MINING_API_DIR"; then
-        git clone "${repos[edge_node_knowledge_mining]}" "$KA_MINING_API_DIR"
-        cd "$KA_MINING_API_DIR"
+    if check_folder "$KA_MING"; then
+        git clone "${repos[edge_node_knowledge_mining]}" "$KA_MING"
+        cd "$KA_MING"
         git checkout main
 
         python3 -m venv .venv
@@ -325,14 +323,14 @@ setup_ka_mining_api() {
         pip install -r requirements.txt
 
         # Create the .env file with required variables
-        cat <<EOL > "$KA_MINING_API_DIR/.env"
+        cat <<EOL > "$KA_MING/.env"
 PORT=5005
 PYTHON_ENV="STAGING"
 DB_USERNAME=$DB_USERNAME
 DB_PASSWORD=$DB_PASSWORD
 DB_HOST="127.0.0.1"
 DB_NAME="ka_mining_api_logging"
-DAG_FOLDER_NAME="$KA_MINING_API_DIR/dags"
+DAG_FOLDER_NAME="$KA_MING/dags"
 AUTH_ENDPOINT=http://$SERVER_IP:3001
 
 OPENAI_API_KEY="$OPENAI_API_KEY"
@@ -352,12 +350,9 @@ EOL
 setup_airflow_service() {
     echo "Setting up Airflow Service on macOS..."
 
-    AIRFLOW_HOME="$EDGE_NODE_DIR/airflow"
-    KA_MINING_API_DIR="$EDGE_NODE_DIR/ka-mining-api"
+    export AIRFLOW_HOME="$EDGE_NODE_DIR/airflow"
 
-    export AIRFLOW_HOME="$AIRFLOW_HOME"
-
-    cd "$KA_MINING_API_DIR"
+    cd "$KA_MINING_API"
 
     # Initialize the Airflow database
     airflow db init
@@ -373,7 +368,7 @@ setup_airflow_service() {
 
     # Configure Airflow settings in the airflow.cfg file
     sed -i '' \
-        -e "s|^dags_folder *=.*|dags_folder = $KA_MINING_API_DIR/dags|" \
+        -e "s|^dags_folder *=.*|dags_folder = $KA_MINING_API/dags|" \
         -e "s|^parallelism *=.*|parallelism = 32|" \
         -e "s|^max_active_tasks_per_dag *=.*|max_active_tasks_per_dag = 16|" \
         -e "s|^max_active_runs_per_dag *=.*|max_active_runs_per_dag = 16|" \
@@ -384,7 +379,7 @@ setup_airflow_service() {
     # Unpause DAGS
     for dag_file in dags/*.py; do
         dag_name=$(basename "$dag_file" .py)
-        $KA_MINING_API_DIR/.venv/bin/airflow dags unpause "$dag_name"
+        $KA_MINING_API/.venv/bin/airflow dags unpause "$dag_name"
     done
 }
 
@@ -394,8 +389,8 @@ setup_ka_minging_api() {
 
     # Check if the directory exists
     if check_folder "$EDGE_NODE_DIR/ka-mining-api"; then
-        git clone "${repos[edge_node_knowledge_mining]}" $EDGE_NODE_DIR/ka-mining-api
-        cd $EDGE_NODE_DIR/ka-mining-api
+        git clone "${repos[edge_node_knowledge_mining]}" $KA_MINING_API
+        cd $KA_MINING_API
         git checkout main
 
         python3.11 -m venv .venv
@@ -403,14 +398,14 @@ setup_ka_minging_api() {
         pip install -r requirements.txt
 
         # Create the .env file with required variables
-        cat <<EOL > $EDGE_NODE_DIR/ka-mining-api/.env
+        cat <<EOL > $KA_MINING_API/.env
 PORT=5005
 PYTHON_ENV="STAGING"
 DB_USERNAME=$DB_USERNAME
 DB_PASSWORD=$DB_PASSWORD
 DB_HOST="127.0.0.1"
 DB_NAME="ka_mining_api_logging"
-DAG_FOLDER_NAME="$EDGE_NODE_DIR/ka-mining-api/dags"
+DAG_FOLDER_NAME="$KA_MINING_API/dags"
 AUTH_ENDPOINT=http://$SERVER_IP:3001
 
 OPENAI_API_KEY="$OPENAI_API_KEY"
