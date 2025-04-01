@@ -10,7 +10,7 @@ API_SERVICE=$EDGE_NODE_DIR/edge-node-api
 DRAG_API=$EDGE_NODE_DIR/drag-api
 KA_MINING_API=$EDGE_NODE_DIR/ka-mining-api
 EDGE_NODE_API=$EDGE_NODE_DIR/edge-node-api
-EDGE_NODE_UI=/var/www/edge-node-ui
+EDGE_NODE_UI=$EDGE_NODE_DIR/edge-node-ui/dist
 
 
 install_blazegraph() {
@@ -226,7 +226,7 @@ setup_edge_node_ui() {
 
     if [ ! -d "$EDGE_NODE_UI" ]; then
         git clone "${repos[edge_node_interface]}" "$EDGE_NODE_UI"
-        cd "$EDGE_NODE_UI" || exit
+        cd "$EDGE_NODE_UI"
         git checkout main
 
         # Create the .env file with required variables
@@ -242,8 +242,7 @@ BASE_URL=http://$SERVER_IP
 EOL
 
         nvm use 22.9.0
-        npm install
-        npm run build
+        npm install && npm run build
 
         # Install and configure Nginx (if not installed)
         if ! command -v nginx &> /dev/null; then
@@ -252,28 +251,39 @@ EOL
 
         # Configure Nginx to serve the UI
         NGINX_CONF="/opt/homebrew/etc/nginx/nginx.conf"
-        cp "$NGINX_CONF" "${NGINX_CONF}.bak"
+        mv "$NGINX_CONF" "${NGINX_CONF}.bak"
 
-        # Modify the configuration to serve the UI
-        cat <<EOL > "$NGINX_CONF"
+        static_dir=$(nginx -V 2>&1 | sed -n 's/.*--prefix=\([^ ]*\).*/\1/p' | grep -v '^$')
+
+        mkdir -p $static_dir/html/edge-node-ui
+        cp -R ${EDGE_NODE_UI}/dist/* $static_dir/html/edge-node-ui
+
+cat <<EOL > "$NGINX_CONF"
 events {}
 
 http {
     server {
         listen 80;
-        server_name localhost;
+        listen [::]:80;
+
+        root ${static_dir}/html/edge-node-ui;
+        index index.html index.htm;
+
+        error_log /opt/homebrew/var/log/nginx/server_error.log warn;
+
+        server_name _;
 
         location / {
-            root $EDGE_NODE_UI/dist;
-            index index.html;
-            try_files \$uri \$uri/ /index.html;
+            try_files $uri $uri/ /index.html =404;
         }
+
+        access_log /opt/homebrew/var/log/nginx/access.log;
     }
 }
 EOL
 
         # Start Nginx
-        sudo nginx -t && sudo brew services restart nginx
+        sudo nginx -t && brew services restart nginx
     fi
 }
 
