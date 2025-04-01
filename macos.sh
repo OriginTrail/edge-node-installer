@@ -6,7 +6,7 @@ OTNODE_DIR="$EDGE_NODE_DIR/ot-node"
 
 # Services
 AUTH_SERVICE=$EDGE_NODE_DIR/edge-node-auth-service
-API=$EDGE_NODE_DIR/edge-node-api
+API_SERVICE=$EDGE_NODE_DIR/edge-node-api
 DRAG_API=$EDGE_NODE_DIR/drag-api
 KA_MINING_API=$EDGE_NODE_DIR/ka-mining-api
 EDGE_NODE_API=$EDGE_NODE_DIR/edge-node-api
@@ -115,11 +115,13 @@ setup() {
         echo "Failed to receive PONG from Redis."
     fi
 
-    #Install Node.js via NVM
     if ! command -v nvm &>/dev/null; then
-        echo "Installing NVM..."
-        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
         export NVM_DIR="$HOME/.nvm"
+        if [ ! -d "$NVM_DIR" ]; then
+            echo "NVM is not installed. Installing NVM..."
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+        fi
+
         [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
     fi
 
@@ -238,10 +240,6 @@ VITE_CHATDKG_API_BASE_URL=http://$SERVER_IP:5002
 VITE_APP_ID=edge_node
 BASE_URL=http://$SERVER_IP
 EOL
-
-        # Install dependencies and build the UI
-        export NVM_DIR="$HOME/.nvm"
-        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # Load NVM
 
         nvm use 22.9.0
         npm install

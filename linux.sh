@@ -167,14 +167,16 @@ setup() {
     systemctl enable redis-server
     systemctl start redis-server
 
-    # Install nodejs v20.18.0 (via NVM).
-    wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash > /dev/null 2>&1
-    export NVM_DIR="$HOME/.nvm"
+    if ! command -v nvm &>/dev/null; then
+        export NVM_DIR="$HOME/.nvm"
+        if [ ! -d "$NVM_DIR" ]; then
+            echo "NVM is not installed. Installing NVM..."
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+        fi
 
-    # This loads nvm
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-    # This loads nvm bash_completion
-    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+        [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+    fi
+
 
     nvm install 22.9.0 > /dev/null 2>&1
     nvm install 20.18.2 > /dev/null 2>&1
