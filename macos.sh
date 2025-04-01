@@ -262,6 +262,10 @@ cat <<EOL > "$NGINX_CONF"
 events {}
 
 http {
+
+    include /opt/homebrew/etc/nginx/mime.types;
+    default_type application/octet-stream;
+
     server {
         listen 80;
         listen [::]:80;
