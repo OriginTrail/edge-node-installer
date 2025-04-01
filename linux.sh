@@ -410,7 +410,6 @@ EOL
         systemctl daemon-reload
         systemctl enable drag-api
         systemctl start drag-api
-        systemctl status drag-api --no-pager
     fi
 }
 

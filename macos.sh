@@ -14,9 +14,9 @@ EDGE_NODE_UI=/var/www/edge-node-ui
 
 
 install_blazegraph() {
-    BLAZEGRAPH_DIR="$OTNODE_DIR/blazegraph"
-    mkdir -p "$BLAZEGRAPH_DIR"
-    wget -O "$BLAZEGRAPH_DIR/blazegraph.jar" https://github.com/blazegraph/database/releases/latest/download/blazegraph.jar
+    BLAZEGRAPH="$OTNODE_DIR/blazegraph"
+    mkdir -p "$BLAZEGRAPH"
+    wget -O "$BLAZEGRAPH/blazegraph.jar" https://github.com/blazegraph/database/releases/latest/download/blazegraph.jar
 }
 
 
@@ -313,9 +313,9 @@ EOL
 setup_ka_mining_api() {
     echo "Setting up KA Mining API Service..."
 
-    if check_folder "$KA_MING"; then
-        git clone "${repos[edge_node_knowledge_mining]}" "$KA_MING"
-        cd "$KA_MING"
+    if check_folder "$KA_MINING_API"; then
+        git clone "${repos[edge_node_knowledge_mining]}" "$KA_MINING_API"
+        cd "$KA_MINING_API"
         git checkout main
 
         python3 -m venv .venv
@@ -323,14 +323,14 @@ setup_ka_mining_api() {
         pip install -r requirements.txt
 
         # Create the .env file with required variables
-        cat <<EOL > "$KA_MING/.env"
+        cat <<EOL > "$KA_MINING_API/.env"
 PORT=5005
 PYTHON_ENV="STAGING"
 DB_USERNAME=$DB_USERNAME
 DB_PASSWORD=$DB_PASSWORD
 DB_HOST="127.0.0.1"
 DB_NAME="ka_mining_api_logging"
-DAG_FOLDER_NAME="$KA_MING/dags"
+DAG_FOLDER_NAME="$KA_MINING_API/dags"
 AUTH_ENDPOINT=http://$SERVER_IP:3001
 
 OPENAI_API_KEY="$OPENAI_API_KEY"
