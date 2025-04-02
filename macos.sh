@@ -6,7 +6,7 @@ OTNODE_DIR="$EDGE_NODE_DIR/ot-node"
 
 # Services
 AUTH_SERVICE="$EDGE_NODE_DIR/edge-node-auth-service"
-API_SERVICE="$EDGE_NODE_DIR/edge-node-api"
+EDGE_NODE_API="$EDGE_NODE_DIR/edge-node-api"
 DRAG_API="$EDGE_NODE_DIR/drag-api"
 KA_MINING_API="$EDGE_NODE_DIR/ka-mining-api"
 EDGE_NODE_API="$EDGE_NODE_DIR/edge-node-api"
@@ -204,14 +204,14 @@ EOL
 setup_edge_node_api() {
     echo "Setting up API Service..."
 
-    if check_folder "$API_SERVICE"; then
-        git clone "$(get_repo_url edge_node_api)" "$API_SERVICE"
+    if check_folder "$EDGE_NODE_API"; then
+        git clone "$(get_repo_url edge_node_api)" "$EDGE_NODE_API"
 
-        cd "$API_SERVICE"
+        cd "$EDGE_NODE_API"
         git checkout main
 
         # Create the .env file with required variables
-        cat <<EOL > "$API_SERVICE/.env"
+        cat <<EOL > "$EDGE_NODE_API/.env"
 NODE_ENV=development
 DB_USERNAME=$DB_USERNAME
 DB_PASSWORD=$DB_PASSWORD

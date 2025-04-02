@@ -269,7 +269,7 @@ EOL
 setup_edge_node_api() {
     echo "Setting up API Service..."
     if check_folder "$EDGE_NODE_API"; then
-        git clone "$(get_repo_url edge_node_api)" "$API_SERVICE"
+        git clone "$(get_repo_url edge_node_api)" "$EDGE_NODE_API"
         cd $EDGE_NODE_API
         git checkout main
 
