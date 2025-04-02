@@ -239,7 +239,7 @@ setup_edge_node_ui() {
     echo "Setting up Edge Node UI..."
 
     if [ ! -d "$EDGE_NODE_UI" ]; then
-        git clone "$(get_repo_url edge_node_interface)" "$DRAG_API"
+        git clone "$(get_repo_url edge_node_interface)" "$EDGE_NODE_UI"
         
         cd "$EDGE_NODE_UI"
         git checkout main
