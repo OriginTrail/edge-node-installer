@@ -80,6 +80,7 @@ if [ -n "$REPOSITORY_USER" ] && [ -n "$REPOSITORY_AUTH" ]; then
   done
 fi
 
+
 # ####### todo: Update ot-node branch
 # ####### todo: Replace add .env variables to .origintrail_noderc
 setup
