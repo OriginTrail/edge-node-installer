@@ -114,7 +114,7 @@ setup() {
     brew upgrade
     brew install make openssl readline \
       sqlite3 wget unzip curl jq \
-      llvm tk git pkg-config python3 \
+      llvm git pkg-config python3 \
       openjdk mysql pkg-config
 
     # Start Redis
