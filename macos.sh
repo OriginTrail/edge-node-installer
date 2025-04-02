@@ -5,12 +5,12 @@ EDGE_NODE_DIR="$HOME/edge_node"
 OTNODE_DIR="$EDGE_NODE_DIR/ot-node"
 
 # Services
-AUTH_SERVICE=$EDGE_NODE_DIR/edge-node-auth-service
-API_SERVICE=$EDGE_NODE_DIR/edge-node-api
-DRAG_API=$EDGE_NODE_DIR/drag-api
-KA_MINING_API=$EDGE_NODE_DIR/ka-mining-api
-EDGE_NODE_API=$EDGE_NODE_DIR/edge-node-api
-EDGE_NODE_UI=$EDGE_NODE_DIR/edge-node-ui/dist
+AUTH_SERVICE="$EDGE_NODE_DIR/edge-node-auth-service"
+API_SERVICE="$EDGE_NODE_DIR/edge-node-api"
+DRAG_API="$EDGE_NODE_DIR/drag-api"
+KA_MINING_API="$EDGE_NODE_DIR/ka-mining-api"
+EDGE_NODE_API="$EDGE_NODE_DIR/edge-node-api"
+EDGE_NODE_UI="$EDGE_NODE_DIR/edge-node-ui/dist"
 
 
 install_blazegraph() {
@@ -28,22 +28,36 @@ install_mysql() {
     sleep 5
 
     # Set MySQL root password
-    mysql -u root ${DB_ROOT_PASSWORD:+-p$DB_ROOT_PASSWORD} -e \
-      "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '';"
+    if [ -n "$DB_ROOT_PASSWORD" ]; then
+        mysql -u root -p"$DB_ROOT_PASSWORD" -e \
+          "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '';"
+    else
+        mysql -u root -e \
+          "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '';"
+    fi
+
     mysql -u root -e "CREATE DATABASE operationaldb /*\!40100 DEFAULT CHARACTER SET utf8 */;"
     mysql -u root -e "CREATE DATABASE \`edge-node-auth-service\`;"
     mysql -u root -e "CREATE DATABASE \`edge-node-api\`;"
     mysql -u root -e "CREATE DATABASE drag_logging;"
     mysql -u root -e "CREATE DATABASE ka_mining_api_logging;"
     mysql -u root -e "CREATE DATABASE airflow_db;"
-    mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '$DB_PASSWORD';"
+
+    if [ -n "$DB_PASSWORD" ]; then
+        mysql -u root -p"$DB_PASSWORD" -e \
+          "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '$DB_PASSWORD';"
+    else
+        mysql -u root -e \
+          "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '';"
+    fi
+
     mysql -u root -p"$DB_PASSWORD" -e "flush privileges;"
 
     # NOTE:
     # Default options are read from the following files in the given order:
     # /etc/my.cnf /etc/mysql/my.cnf /opt/homebrew/etc/my.cnf ~/.my.cnf
     MYSQL_CONFIG_FILE="$HOME/.my.cnf"
-    if [[ -f "$MYSQL_CONFIG_FILE" ]]; then
+    if [ -f "$MYSQL_CONFIG_FILE" ]; then
         sed -i '' 's|max_binlog_size|#max_binlog_size|' "$MYSQL_CONFIG_FILE"
         echo -e "disable_log_bin\nwait_timeout = 31536000\ninteractive_timeout = 31536000" >> "$MYSQL_CONFIG_FILE"
     fi
@@ -64,6 +78,7 @@ install_otnode() {
     unzip *.zip
     rm *.zip
 
+    # Using `jq` to extract the version
     OTNODE_VERSION=$(jq -r '.version' "$OT_RELEASE_DIR/package.json")
 
     mkdir -p "$OTNODE_DIR/$OTNODE_VERSION"
@@ -72,10 +87,11 @@ install_otnode() {
     rm -rf "$OT_RELEASE_DIR"
     ln -sfn "$OTNODE_DIR/$OTNODE_VERSION" "$OTNODE_DIR/current"
 
-    cd $EDGE_NODE_INSTALLER_DIR; 
+    cd $EDGE_NODE_INSTALLER_DIR
 
+    # Generate engine node config
     generate_engine_node_config "$OTNODE_DIR"
-    if [[ $? -eq 0 ]]; then
+    if [ $? -eq 0 ]; then
         echo "✅ Blockchain config successfully generated at $OTNODE_DIR"
     else
         echo "❌ Blockchain config generation failed!"
@@ -108,8 +124,8 @@ setup() {
 
     # Start Redis
     brew install redis
-    RESPONSE=$(redis-cli ping)
-    if [ "$RESPONSE" == "PONG" ]; then
+    RESPONSE=`redis-cli ping`
+    if [ "$RESPONSE" = "PONG" ]; then
         echo "Redis is up and running."
     else
         echo "Failed to receive PONG from Redis."
@@ -122,7 +138,9 @@ setup() {
             curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
         fi
 
-        [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+        if [ -s "$NVM_DIR/nvm.sh" ]; then
+            . "$NVM_DIR/nvm.sh"
+        fi
     fi
 
     nvm install 22.9.0
@@ -137,7 +155,6 @@ setup() {
 
     echo "✅ Setup completed!"
 }
-
 
 setup_auth_service() {
     echo "Setting up Authentication Service..."
@@ -361,7 +378,6 @@ EOL
     fi
 }
 
-
 setup_airflow_service() {
     echo "Setting up Airflow Service on macOS..."
 
@@ -394,6 +410,6 @@ setup_airflow_service() {
     # Unpause DAGS
     for dag_file in dags/*.py; do
         dag_name=$(basename "$dag_file" .py)
-        $KA_MINING_API/.venv/bin/airflow dags unpause "$dag_name"
+        "$KA_MINING_API/.venv/bin/airflow" dags unpause "$dag_name"
     done
 }
