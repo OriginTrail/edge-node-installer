@@ -18,32 +18,6 @@ if [[ "$OS" == "Darwin" ]]; then
         SERVER_IP=$(ipconfig getifaddr en0)
     fi
 
-    if [[ "$(bash --version | head -n 1 | awk '{print $4}')" < "5.2" ]]; then
-      echo "Bash 5.2 or higher is required. Attempting to install via Homebrew..."
-      
-      # Check if Homebrew is installed
-      if ! command -v brew &>/dev/null; then
-        echo "Error: Homebrew is not installed. Please install it first: https://brew.sh/"
-        exit 1
-      fi
-
-      # Install Bash 5.2
-      brew install bash
-
-      # Get new Bash path
-      NEW_BASH_PATH=$(brew --prefix)/bin/bash
-
-      # Add it to /etc/shells if not present
-      if ! grep -Fxq "$NEW_BASH_PATH" /etc/shells; then
-        echo "$NEW_BASH_PATH" | sudo tee -a /etc/shells
-      fi
-
-      # Set default shell
-      chsh -s "$NEW_BASH_PATH"
-      echo "Bash 5.2 installed. Restart your terminal and run the script again."
-      exit 0
-    fi
-
 elif [[ "$OS" == "Linux" ]]; then
     echo "Detected Linux"
 
@@ -76,20 +50,36 @@ source ./common.sh
 source ./engine-node-config-generator.sh
 
 #configure edge-node components github repositories
-declare -A repos=(
-  ["edge_node_knowledge_mining"]=${EDGE_NODE_KNOWLEDGE_MINING_REPO:-"https://github.com/OriginTrail/edge-node-knowledge-mining"}
-  ["edge_node_auth_service"]=${EDGE_NODE_AUTH_SERVICE_REPO:-"https://github.com/OriginTrail/edge-node-authentication-service"}
-  ["edge_node_drag"]=${EDGE_NODE_DRAG_REPO:-"https://github.com/OriginTrail/edge-node-drag"}
-  ["edge_node_api"]=${EDGE_NODE_API_REPO:-"https://github.com/OriginTrail/edge-node-api"}
-  ["edge_node_interface"]=${EDGE_NODE_UI_REPO:-"https://github.com/OriginTrail/edge-node-interface"}
+repos_keys=("edge_node_knowledge_mining" "edge_node_auth_service" "edge_node_drag" "edge_node_api" "edge_node_interface")
+repos_values=(
+  "${EDGE_NODE_KNOWLEDGE_MINING_REPO:-https://github.com/OriginTrail/edge-node-knowledge-mining}"
+  "${EDGE_NODE_AUTH_SERVICE_REPO:-https://github.com/OriginTrail/edge-node-authentication-service}"
+  "${EDGE_NODE_DRAG_REPO:-https://github.com/OriginTrail/edge-node-drag}"
+  "${EDGE_NODE_API_REPO:-https://github.com/OriginTrail/edge-node-api}"
+  "${EDGE_NODE_UI_REPO:-https://github.com/OriginTrail/edge-node-interface}"
 )
 
+# Function to get the repo URL by key
+get_repo_url() {
+  local key="$1"
+  for i in "${!repos_keys[@]}"; do
+    if [[ "${repos_keys[i]}" == "$key" ]]; then
+      echo "${repos_values[i]}"
+      return
+    fi
+  done
+  echo "Repository not found" >&2
+  return 1
+}
+
+# Add credentials if provided
 if [[ -n "$REPOSITORY_USER" && -n "$REPOSITORY_AUTH" ]]; then
   credentials="${REPOSITORY_USER}:${REPOSITORY_AUTH}@"
-  for key in "${!repos[@]}"; do
-    repos[$key]="${repos[$key]//https:\/\//https://$credentials}"
+  for i in "${!repos_values[@]}"; do
+    repos_values[i]="${repos_values[i]//https:\/\//https://$credentials}"
   done
 fi
+
 
 # ####### todo: Update ot-node branch
 # ####### todo: Replace add .env variables to .origintrail_noderc
@@ -98,7 +88,7 @@ setup_auth_service && \
 setup_edge_node_api && \
 setup_edge_node_ui && \
 setup_drag_api && \
-setup_ka_minging_api && \
+setup_ka_mining_api && \
 setup_airflow_service
 
 if [[ $DEPLOYMENT_MODE = "production" ]]; then

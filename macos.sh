@@ -143,7 +143,8 @@ setup_auth_service() {
     echo "Setting up Authentication Service..."
 
     if check_folder "$AUTH_SERVICE"; then
-        git clone "${repos[edge_node_auth_service]}" "$AUTH_SERVICE"
+        git clone "$(get_repo_url edge_node_auth_service)" "$AUTH_SERVICE"
+
         cd "$AUTH_SERVICE"
         git checkout main
 
@@ -190,7 +191,8 @@ setup_edge_node_api() {
     echo "Setting up API Service..."
 
     if check_folder "$API_SERVICE"; then
-        git clone "${repos[edge_node_api]}" "$API_SERVICE"
+        git clone "$(get_repo_url edge_node_api)" "$API_SERVICE"
+
         cd "$API_SERVICE"
         git checkout main
 
@@ -225,7 +227,8 @@ setup_edge_node_ui() {
     echo "Setting up Edge Node UI..."
 
     if [ ! -d "$EDGE_NODE_UI" ]; then
-        git clone "${repos[edge_node_interface]}" "$EDGE_NODE_UI"
+        git clone "$(get_repo_url edge_node_interface)" "$DRAG_API"
+        
         cd "$EDGE_NODE_UI"
         git checkout main
 
@@ -295,7 +298,7 @@ setup_drag_api() {
     echo "Setting up dRAG API Service..."
 
     if check_folder "$DRAG_API"; then
-        git clone "${repos[edge_node_drag]}" "$DRAG_API"
+        git clone "$(get_repo_url edge_node_drag)" "$DRAG_API"
         cd "$DRAG_API"
         git checkout main
 
@@ -326,7 +329,7 @@ setup_ka_mining_api() {
     echo "Setting up KA Mining API Service..."
 
     if check_folder "$KA_MINING_API"; then
-        git clone "${repos[edge_node_knowledge_mining]}" "$KA_MINING_API"
+        git clone "$(get_repo_url edge_node_knowledge_mining)" "$KA_MINING_API"
         cd "$KA_MINING_API"
         git checkout main
 
@@ -393,42 +396,4 @@ setup_airflow_service() {
         dag_name=$(basename "$dag_file" .py)
         $KA_MINING_API/.venv/bin/airflow dags unpause "$dag_name"
     done
-}
-
-
-setup_ka_minging_api() {
-    echo "Setting up KA Mining API Service..."
-
-    # Check if the directory exists
-    if check_folder "$EDGE_NODE_DIR/ka-mining-api"; then
-        git clone "${repos[edge_node_knowledge_mining]}" $KA_MINING_API
-        cd $KA_MINING_API
-        git checkout main
-
-        python3.11 -m venv .venv
-        source .venv/bin/activate
-        pip install -r requirements.txt
-
-        # Create the .env file with required variables
-        cat <<EOL > $KA_MINING_API/.env
-PORT=5005
-PYTHON_ENV="STAGING"
-DB_USERNAME=$DB_USERNAME
-DB_PASSWORD=$DB_PASSWORD
-DB_HOST="127.0.0.1"
-DB_NAME="ka_mining_api_logging"
-DAG_FOLDER_NAME="$KA_MINING_API/dags"
-AUTH_ENDPOINT=http://$SERVER_IP:3001
-
-OPENAI_API_KEY="$OPENAI_API_KEY"
-HUGGINGFACE_API_KEY="$HUGGINGFACE_API_KEY"
-UNSTRUCTURED_API_URL="$UNSTRUCTURED_API_URL"
-
-ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY"
-BIONTOLOGY_KEY="$BIONTOLOGY_KEY"
-MILVUS_USERNAME="$MILVUS_USERNAME"
-MILVUS_PASSWORD="$MILVUS_PASSWORD"
-MILVUS_URI="$MILVUS_URI"
-EOL
-    fi
 }

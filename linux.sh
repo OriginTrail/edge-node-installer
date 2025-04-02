@@ -416,7 +416,7 @@ EOL
 }
 
 
-setup_ka_minging_api() {
+setup_ka_mining_api() {
     echo "Setting up KA Mining API Service..."
 
     if check_folder "$KA_MINING_API"; then
