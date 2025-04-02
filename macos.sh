@@ -260,9 +260,11 @@ VITE_APP_ID=edge_node
 BASE_URL=http://$SERVER_IP
 EOL
 
+        export NVM_DIR="$HOME/.nvm"
+        source "$NVM_DIR/nvm.sh"
         nvm use 22.9.0
-	    rm -rf node_modules package-lock.json
-    	npm cache clean --force
+        rm -rf node_modules package-lock.json
+        npm cache clean --force
         npm install && npm run build
 
         # Install and configure Nginx (if not installed)
@@ -270,40 +272,31 @@ EOL
             brew install nginx
         fi
 
-        # Configure Nginx to serve the UI
-        NGINX_CONF="/opt/homebrew/etc/nginx/nginx.conf"
-        mv "$NGINX_CONF" "${NGINX_CONF}.bak"
-
         static_dir=$(nginx -V 2>&1 | sed -n 's/.*--prefix=\([^ ]*\).*/\1/p' | grep -v '^$')
+        EDGE_NODE_UI_STATIC_DIR="${static_dir}/html/edge-node-ui"
+        mkdir -p $EDGE_NODE_UI_STATIC_DIR
 
-        mkdir -p $static_dir/html/edge-node-ui
-        cp -R ${EDGE_NODE_UI}/dist/* $static_dir/html/edge-node-ui
+        cp -R ${EDGE_NODE_UI}/dist/* $EDGE_NODE_UI_STATIC_DIR
 
-cat <<EOL > "$NGINX_CONF"
-events {}
+        EDGE_NODE_UI_NGINX_SITE="/opt/homebrew/etc/nginx/servers/edge-node-ui"
 
-http {
+cat <<EOL > "$EDGE_NODE_UI_NGINX_SITE"
+server {
+    listen 80;
+    listen [::]:80;
 
-    include /opt/homebrew/etc/nginx/mime.types;
-    default_type application/octet-stream;
+    root ${static_dir}/html/edge-node-ui;
+    index index.html index.htm;
 
-    server {
-        listen 80;
-        listen [::]:80;
+    error_log /opt/homebrew/var/log/nginx/server_error.log warn;
 
-        root ${static_dir}/html/edge-node-ui;
-        index index.html index.htm;
+    server_name _;
 
-        error_log /opt/homebrew/var/log/nginx/server_error.log warn;
-
-        server_name _;
-
-        location / {
-            try_files $uri $uri/ /index.html =404;
-        }
-
-        access_log /opt/homebrew/var/log/nginx/access.log;
+    location / {
+        try_files $uri $uri/ /index.html =404;
     }
+
+    access_log /opt/homebrew/var/log/nginx/access.log;
 }
 EOL
 

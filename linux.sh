@@ -296,8 +296,7 @@ EOL
         npx sequelize-cli db:migrate
     fi
 
-    if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
-        cat <<EOL > /etc/systemd/system/edge-node-api.service
+    cat <<EOL > /etc/systemd/system/edge-node-api.service
 [Unit]
 Description=Edge Node API Service
 After=network.target
@@ -314,6 +313,7 @@ Group=root
 WantedBy=multi-user.target
 EOL
 
+    if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
         systemctl daemon-reload
         systemctl enable edge-node-api
         systemctl start edge-node-api
@@ -391,8 +391,7 @@ EOL
         npx sequelize-cli db:migrate
     fi
 
-    if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
-        cat <<EOL > /etc/systemd/system/drag-api.service
+    cat <<EOL > /etc/systemd/system/drag-api.service
 [Unit]
 Description=dRAG API Service
 After=network.target
@@ -409,6 +408,7 @@ Group=root
 WantedBy=multi-user.target
 EOL
 
+    if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
         systemctl daemon-reload
         systemctl enable drag-api
         systemctl start drag-api
@@ -451,8 +451,7 @@ MILVUS_URI="$MILVUS_URI"
 EOL
     fi
 
-    if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
-        cat <<EOL > /etc/systemd/system/ka-mining-api.service
+    cat <<EOL > /etc/systemd/system/ka-mining-api.service
 [Unit]
 Description=KA Mining API Service
 After=network.target
@@ -469,6 +468,7 @@ Group=root
 WantedBy=multi-user.target
 EOL
 
+    if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
         systemctl daemon-reload
         systemctl enable ka-mining-api
         systemctl start ka-mining-api
@@ -505,9 +505,8 @@ setup_airflow_service() {
         -e 's|^load_examples *=.*|load_examples = False|' \
         $AIRFLOW_HOME/airflow.cfg
 
-    if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
-        # AIRFLOW WEBSERVER sytemctl setup
-        cat <<EOL > /etc/systemd/system/airflow-webserver.service
+    # AIRFLOW WEBSERVER sytemctl setup
+    cat <<EOL > /etc/systemd/system/airflow-webserver.service
 [Unit]
 Description=Airflow Webserver
 After=network.target
@@ -523,12 +522,6 @@ Group=root
 [Install]
 WantedBy=multi-user.target
 EOL
-
-        # Unpause DAGS
-        for dag_file in dags/*.py; do
-            dag_name=$(basename "$dag_file" .py)
-            $KA_MINING_API/.venv/bin/airflow dags unpause "$dag_name"
-        done
 
     cat <<EOL > /etc/systemd/system/airflow-scheduler.service
 [Unit]
@@ -546,6 +539,13 @@ Group=root
 [Install]
 WantedBy=multi-user.target
 EOL
+
+    if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
+        # Unpause DAGS
+        for dag_file in dags/*.py; do
+            dag_name=$(basename "$dag_file" .py)
+            $KA_MINING_API/.venv/bin/airflow dags unpause "$dag_name"
+        done
 
         systemctl daemon-reload
         systemctl enable airflow-webserver
