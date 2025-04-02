@@ -10,7 +10,7 @@ API_SERVICE="$EDGE_NODE_DIR/edge-node-api"
 DRAG_API="$EDGE_NODE_DIR/drag-api"
 KA_MINING_API="$EDGE_NODE_DIR/ka-mining-api"
 EDGE_NODE_API="$EDGE_NODE_DIR/edge-node-api"
-EDGE_NODE_UI="$EDGE_NODE_DIR/edge-node-ui/dist"
+EDGE_NODE_UI="$EDGE_NODE_DIR/edge-node-ui"
 
 
 install_blazegraph() {
