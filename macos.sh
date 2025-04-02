@@ -176,6 +176,8 @@ UI_SSL=false
 EOL
 
         # Install dependencies
+	    rm -rf node_modules package-lock.json
+    	npm cache clean --force
         nvm exec 22.9.0 npm install
 
         # Setup database
@@ -228,6 +230,8 @@ UI_SSL=false
 EOL
 
         # Install dependencies
+	    rm -rf node_modules package-lock.json
+    	npm cache clean --force
         nvm exec 20.18.2 npm install
 
         # Setup database
@@ -239,7 +243,7 @@ setup_edge_node_ui() {
     echo "Setting up Edge Node UI..."
 
     if [ ! -d "$EDGE_NODE_UI" ]; then
-        git clone "$(get_repo_url edge_node_interface)" "$DRAG_API"
+        git clone "$(get_repo_url edge_node_interface)" "$EDGE_NODE_UI"
         
         cd "$EDGE_NODE_UI"
         git checkout main
@@ -257,6 +261,8 @@ BASE_URL=http://$SERVER_IP
 EOL
 
         nvm use 22.9.0
+	    rm -rf node_modules package-lock.json
+    	npm cache clean --force
         npm install && npm run build
 
         # Install and configure Nginx (if not installed)
@@ -329,6 +335,8 @@ OPENAI_API_KEY="$OPENAI_API_KEY"
 EOL
 
         # Install dependencies
+	    rm -rf node_modules package-lock.json
+    	npm cache clean --force
         nvm exec 22.9.0 npm install
 
         # Exec migrations
