@@ -18,6 +18,32 @@ if [[ "$OS" == "Darwin" ]]; then
         SERVER_IP=$(ipconfig getifaddr en0)
     fi
 
+    if [[ "$(bash --version | head -n 1 | awk '{print $4}')" < "5.2" ]]; then
+      echo "Bash 5.2 or higher is required. Attempting to install via Homebrew..."
+      
+      # Check if Homebrew is installed
+      if ! command -v brew &>/dev/null; then
+        echo "Error: Homebrew is not installed. Please install it first: https://brew.sh/"
+        exit 1
+      fi
+
+      # Install Bash 5.2
+      brew install bash
+
+      # Get new Bash path
+      NEW_BASH_PATH=$(brew --prefix)/bin/bash
+
+      # Add it to /etc/shells if not present
+      if ! grep -Fxq "$NEW_BASH_PATH" /etc/shells; then
+        echo "$NEW_BASH_PATH" | sudo tee -a /etc/shells
+      fi
+
+      # Set default shell
+      chsh -s "$NEW_BASH_PATH"
+      echo "Bash 5.2 installed. Restart your terminal and run the script again."
+      exit 0
+    fi
+
 elif [[ "$OS" == "Linux" ]]; then
     echo "Detected Linux"
 
