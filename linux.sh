@@ -198,8 +198,8 @@ setup() {
 setup_auth_service() {
     echo "Setting up Authentication Service..."
     if check_folder "$AUTH_SERVICE"; then
-    
         git clone "$(get_repo_url edge_node_auth_service)" "$AUTH_SERVICE"
+
         cd $AUTH_SERVICE
         git checkout main
 
@@ -267,7 +267,6 @@ EOL
 setup_edge_node_api() {
     echo "Setting up API Service..."
     if check_folder "$EDGE_NODE_API"; then
-    
         git clone "$(get_repo_url edge_node_api)" "$API_SERVICE"
         cd $EDGE_NODE_API
         git checkout main
@@ -327,6 +326,7 @@ setup_edge_node_ui() {
 
     if check_folder "$EDGE_NODE_UI"; then
         git clone "$(get_repo_url edge_node_interface)" "$EDGE_NODE_UI"
+
         cd $EDGE_NODE_UI
         git checkout main
 
@@ -369,6 +369,7 @@ setup_drag_api() {
 
     if check_folder "$DRAG_API"; then
         git clone "$(get_repo_url edge_node_drag)" "$DRAG_API"
+
         cd $DRAG_API
         git checkout main
 
@@ -423,6 +424,7 @@ setup_ka_mining_api() {
 
     if check_folder "$KA_MINING_API"; then
         git clone "$(get_repo_url edge_node_knowledge_mining)" "$KA_MINING_API"
+
         cd $KA_MINING_API
         git checkout main
 
