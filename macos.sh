@@ -27,6 +27,8 @@ install_mysql() {
     # Wait for MySQL to start
     sleep 5
 
+    echo "$DB_ROOT_PASSWORD"
+
     # Set MySQL root password
     if [ -n "$DB_ROOT_PASSWORD" ]; then
         mysql -u root -p"$DB_ROOT_PASSWORD" -e \
@@ -42,14 +44,7 @@ install_mysql() {
     mysql -u root -e "CREATE DATABASE drag_logging;"
     mysql -u root -e "CREATE DATABASE ka_mining_api_logging;"
     mysql -u root -e "CREATE DATABASE airflow_db;"
-
-    if [ -n "$DB_PASSWORD" ]; then
-        mysql -u root -p"$DB_PASSWORD" -e \
-          "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '$DB_PASSWORD';"
-    else
-        mysql -u root -e \
-          "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '';"
-    fi
+    mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '$DB_PASSWORD';"
 
     mysql -u root -p"$DB_PASSWORD" -e "flush privileges;"
 
