@@ -34,7 +34,6 @@ elif [ "$OS" == "Linux" ]; then
     source './linux.sh'
     check_system_version
 
-   
 else
     echo "Unsupported OS: $OS"
     exit 1
