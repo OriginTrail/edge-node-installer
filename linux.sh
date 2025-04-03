@@ -198,7 +198,8 @@ setup() {
 setup_auth_service() {
     echo "Setting up Authentication Service..."
     if check_folder "$AUTH_SERVICE"; then
-        git clone "${repos[edge_node_auth_service]}" $AUTH_SERVICE
+        git clone "$(get_repo_url edge_node_auth_service)" "$AUTH_SERVICE"
+
         cd $AUTH_SERVICE
         git checkout main
 
@@ -216,6 +217,8 @@ UI_ENDPOINT=http://$SERVER_IP
 UI_SSL=false
 EOL
 
+        rm -rf node_modules package-lock.json
+        npm cache clean --force
         # Install dependencies
         nvm exec 22.9.0 npm install
 
@@ -266,7 +269,7 @@ EOL
 setup_edge_node_api() {
     echo "Setting up API Service..."
     if check_folder "$EDGE_NODE_API"; then
-        git clone "${repos[edge_node_api]}" $EDGE_NODE_API
+        git clone "$(get_repo_url edge_node_api)" "$EDGE_NODE_API"
         cd $EDGE_NODE_API
         git checkout main
 
@@ -289,6 +292,8 @@ RUNTIME_NODE_OPERATIONAL_DB_DIALECT=mysql
 UI_SSL=false
 EOL
 
+        rm -rf node_modules package-lock.json
+        npm cache clean --force
         # Install dependencies
         nvm exec 20.18.2 npm install
 
@@ -324,7 +329,8 @@ setup_edge_node_ui() {
     echo "Setting up Edge Node UI..."
 
     if check_folder "$EDGE_NODE_UI"; then
-        git clone "${repos[edge_node_interface]}" $EDGE_NODE_UI
+        git clone "$(get_repo_url edge_node_interface)" "$EDGE_NODE_UI"
+
         cd $EDGE_NODE_UI
         git checkout main
 
@@ -340,6 +346,8 @@ VITE_APP_ID=edge_node
 BASE_URL=http://$SERVER_IP
 EOL
 
+        rm -rf node_modules package-lock.json
+        npm cache clean --force
         # Build the UI
         nvm exec 22.9.0 npm install
         nvm exec 22.9.0 npm run build
@@ -366,7 +374,8 @@ setup_drag_api() {
     echo "Setting up dRAG API Service..."
 
     if check_folder "$DRAG_API"; then
-        git clone "${repos[edge_node_drag]}" $DRAG_API
+        git clone "$(get_repo_url edge_node_drag)" "$DRAG_API"
+
         cd $DRAG_API
         git checkout main
 
@@ -384,6 +393,8 @@ UI_ENDPOINT="http://$SERVER_IP"
 OPENAI_API_KEY="$OPENAI_API_KEY"
 EOL
 
+        rm -rf node_modules package-lock.json
+        npm cache clean --force
         # Install dependencies
         nvm exec 22.9.0 npm install
 
@@ -420,7 +431,8 @@ setup_ka_mining_api() {
     echo "Setting up KA Mining API Service..."
 
     if check_folder "$KA_MINING_API"; then
-        git clone "${repos[edge_node_knowledge_mining]}" $KA_MINING_API
+        git clone "$(get_repo_url edge_node_knowledge_mining)" "$KA_MINING_API"
+
         cd $KA_MINING_API
         git checkout main
 
