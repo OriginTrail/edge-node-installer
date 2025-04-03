@@ -39,10 +39,11 @@ else
     exit 1
 fi
 
-# If PUBLIC_IP and SERVER_NAME differ, set SERVER_NAME to PUBLIC_IP
-PUBLIC_IP=$(curl -s ifconfig.me)
-if [ "$PUBLIC_IP" != "$SERVER_NAME" ]; then
-    $SERVER_NAME="$PUBLIC_IP"
+# If SERVER_EXTERNAL_IP and SERVER_EXTERNAL_IP differ, 
+# set SERVER_IP to SERVER_EXTERNAL_IP
+SERVER_EXTERNAL_IP=$(curl -s ifconfig.me)
+if [ "$SERVER_EXTERNAL_IP" != "$SERVER_IP" ]; then
+    $SERVER_IP="$SERVER_EXTERNAL_IP"
 fi
 
 mkdir -p "$EDGE_NODE_DIR"
