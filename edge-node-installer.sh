@@ -43,7 +43,7 @@ fi
 # set SERVER_IP to SERVER_EXTERNAL_IP
 SERVER_EXTERNAL_IP=$(curl -s ifconfig.me)
 if [ "$SERVER_EXTERNAL_IP" != "$SERVER_IP" ]; then
-    $SERVER_IP="$SERVER_EXTERNAL_IP"
+    SERVER_IP="$SERVER_EXTERNAL_IP"
 fi
 
 mkdir -p "$EDGE_NODE_DIR"

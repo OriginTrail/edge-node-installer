@@ -177,7 +177,6 @@ setup() {
         [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
     fi
 
-
     nvm install 22.9.0 > /dev/null 2>&1
     nvm install 20.18.2 > /dev/null 2>&1
 
