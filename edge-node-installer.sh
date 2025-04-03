@@ -33,10 +33,17 @@ elif [ "$OS" == "Linux" ]; then
 
     source './linux.sh'
     check_system_version
+
    
 else
     echo "Unsupported OS: $OS"
     exit 1
+fi
+
+# If PUBLIC_IP and SERVER_NAME differ, set SERVER_NAME to PUBLIC_IP
+PUBLIC_IP=$(curl -s ifconfig.me)
+if [ "$PUBLIC_IP" != "$SERVER_NAME" ]; then
+    $SERVER_NAME="$PUBLIC_IP"
 fi
 
 mkdir -p "$EDGE_NODE_DIR"
