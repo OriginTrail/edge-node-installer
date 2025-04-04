@@ -238,6 +238,33 @@ EOL
         # Clean up temp file
         rm "$TEMP_SQL_FILE"
 
+        mysql -u "root" -p"$DB_PASSWORD" "edge-node-auth-service" -e \
+            "DELETE FROM user_wallets WHERE user_id = '1';"
+
+        publishing_blockchain=$(get_blockchain_config ${DEFAULT_PUBLISH_BLOCKCHAIN}-${BLOCKCHAIN_ENVIRONMENT})
+
+        values=""
+        for i in 01 02 03; do
+            public_key="PUBLISH_WALLET_${i}_PUBLIC_KEY"
+            private_key="PUBLISH_WALLET_${i}_PRIVATE_KEY"
+
+            createDate=$(date '+%Y-%m-%d %H:%M:%S')
+            if [[ -n "${!public_key}" && -n "${!private_key}" ]]; then
+                if [[ -n "$values" ]]; then
+                    values="$values, ('1', '${!public_key}', '${!private_key}', '${publishing_blockchain}', '${createDate}', '${createDate}')"
+                else
+                    values="('1', '${!public_key}', '${!private_key}', '${publishing_blockchain}', '${createDate}', '${createDate}')"
+                fi
+            fi
+        done
+
+        echo $values;
+        if [[ -n "$values" ]]; then
+            query="INSERT INTO user_wallets (user_id, wallet, private_key, blockchain, createdAt, updatedAt) VALUES $values;"
+            mysql -u root -p"${DB_PASSWORD}" "edge-node-auth-service" -e "$query"
+            echo "Wallets updated successfully."
+        fi
+
         echo "User config updated successfully."
     fi;
 

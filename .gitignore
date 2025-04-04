@@ -3,3 +3,6 @@
 temp-mysql.sh
 test-installer.sh
 .DS_Store
+blazegraph.jnl
+logs/
+*.log

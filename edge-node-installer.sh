@@ -56,7 +56,7 @@ touch "$HOME/.bash_profile"
 source ./common.sh
 source ./engine-node-config-generator.sh
 
-# configure edge-node components github repositories
+# Service repositories
 repos_keys=("edge_node_knowledge_mining" "edge_node_auth_service" "edge_node_drag" "edge_node_api" "edge_node_interface")
 repos_values=(
   "${EDGE_NODE_KNOWLEDGE_MINING_REPO:-https://github.com/OriginTrail/edge-node-knowledge-mining}"
@@ -66,7 +66,6 @@ repos_values=(
   "${EDGE_NODE_UI_REPO:-https://github.com/OriginTrail/edge-node-interface}"
 )
 
-# Function to get the repo URL by key
 get_repo_url() {
   local key="$1"
   for (( i=0; i<${#repos_keys[@]}; i++ )); do
@@ -78,6 +77,31 @@ get_repo_url() {
   echo "Repository not found" >&2
   return 1
 }
+
+# Supported blockchains
+blockchain_keys=("neuroweb-mainnet" "neuroweb-testnet" "base-mainnet" "base-testnet" "gnosis-mainnet" "gnosis-testnet")
+blockchain_values=(
+  "otp:2043" 
+  "otp:20430" 
+  "base:8453" 
+  "base:84532"
+  "gnosis:100"
+  "gnosis:10200"
+)
+
+get_blockchain_config() {
+  local key="$1"
+
+  for (( i=0; i<${#blockchain_keys[@]}; i++ )); do
+    if [ "${blockchain_keys[$i]}" == "$key" ]; then
+      echo "${blockchain_values[$i]}"
+      return
+    fi
+  done
+  echo "Blockchain not found" >&2
+  return 1
+}
+
 
 # Add credentials if provided
 if [ -n "$REPOSITORY_USER" ] && [ -n "$REPOSITORY_AUTH" ]; then
