@@ -67,16 +67,20 @@ install_blazegraph() {
 install_mysql() {
     apt install tcllib mysql-server -y
 
-    mysql -u root ${DB_ROOT_PASSWORD:+-p$DB_ROOT_PASSWORD} -e \
-      "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '';"
-    mysql -u root -e "CREATE DATABASE operationaldb /*\!40100 DEFAULT CHARACTER SET utf8 */;"
-    mysql -u root -e "CREATE DATABASE \`edge-node-auth-service\`"
-    mysql -u root -e "CREATE DATABASE \`edge-node-api\`;"
-    mysql -u root -e "CREATE DATABASE drag_logging;"
-    mysql -u root -e "CREATE DATABASE ka_mining_api_logging;"
-    mysql -u root -e "CREATE DATABASE airflow_db;"
-    mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '$DB_PASSWORD';"
-    mysql -u root -p"$DB_PASSWORD" -e "flush privileges;"
+    # Setup MySQL root user password
+    mysql -u root -proot -e "
+        ALTER USER 'root'@'localhost'
+        IDENTIFIED WITH caching_sha2_password
+        BY '${DB_PASSWORD}';
+    " || echo "⚠️ Existing password detected, skipping password change"
+
+    mysql -u root -p"$DB_PASSWORD" -e "CREATE DATABASE operationaldb /*\!40100 DEFAULT CHARACTER SET utf8 */;"
+    mysql -u root -p"$DB_PASSWORD" -e "CREATE DATABASE \`edge-node-auth-service\`"
+    mysql -u root -p"$DB_PASSWORD" -e "CREATE DATABASE \`edge-node-api\`;"
+    mysql -u root -p"$DB_PASSWORD" -e "CREATE DATABASE drag_logging;"
+    mysql -u root -p"$DB_PASSWORD" -e "CREATE DATABASE ka_mining_api_logging;"
+    mysql -u root -p"$DB_PASSWORD" -e "CREATE DATABASE airflow_db;"
+
 
     sed -i 's|max_binlog_size|#max_binlog_size|' /etc/mysql/mysql.conf.d/mysqld.cnf
     echo -e "disable_log_bin\nwait_timeout = 31536000\ninteractive_timeout = 31536000" >> /etc/mysql/mysql.conf.d/mysqld.cnf
