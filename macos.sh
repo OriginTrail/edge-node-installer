@@ -112,6 +112,8 @@ setup() {
 
     # Start Redis
     brew install redis
+    sleep 3
+ 
     RESPONSE=`redis-cli ping`
     if [ "$RESPONSE" = "PONG" ]; then
         echo "Redis is up and running."

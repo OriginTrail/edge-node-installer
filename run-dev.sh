@@ -18,6 +18,12 @@ pkill -f python
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
 
+OS=$(uname -s)
+if [ "$OS" == "Darwin" ]; then
+    echo "Starting REDIS ..."
+    redis-server &
+fi
+
 java -jar "$OTNODE_DIR/blazegraph/blazegraph.jar" &
 $HOME/.nvm/versions/node/v20.18.2/bin/node $OTNODE_DIR/current/index.js &
 

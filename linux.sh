@@ -81,7 +81,6 @@ install_mysql() {
     mysql -u root -p"$DB_PASSWORD" -e "CREATE DATABASE ka_mining_api_logging;"
     mysql -u root -p"$DB_PASSWORD" -e "CREATE DATABASE airflow_db;"
 
-
     sed -i 's|max_binlog_size|#max_binlog_size|' /etc/mysql/mysql.conf.d/mysqld.cnf
     echo -e "disable_log_bin\nwait_timeout = 31536000\ninteractive_timeout = 31536000" >> /etc/mysql/mysql.conf.d/mysqld.cnf
 
