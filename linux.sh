@@ -14,10 +14,10 @@ EDGE_NODE_UI=/var/www/edge-node-ui
 
 # Load the configuration variables
 if [ -f .env ]; then
-  source .env
+    source .env
 else
-  echo "Config file not found!"
-  exit 1
+    echo "Config file not found. Make sure you have configured your .env file!"
+    exit 1
 fi
 
 source './common.sh'

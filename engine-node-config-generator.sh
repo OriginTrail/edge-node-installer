@@ -24,12 +24,12 @@ generate_engine_node_config() {
         return 1
     fi
 
-    # Load environment variables
+    # Load the configuration variables
     if [ -f .env ]; then
         source .env
     else
-        echo "Error: .env file not found!"
-        return 1
+        echo "Config file not found. Make sure you have configured your .env file!"
+        exit 1
     fi
 
     # **Ensure JSON_FILE exists or create a default one**

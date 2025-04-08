@@ -101,6 +101,12 @@ setup() {
     if ! command -v brew &>/dev/null; then
         echo "Installing Homebrew..."
         /usr/bin/env bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+        if [ $(uname -m) == 'arm64' ]; then
+            echo 'eval "$(/opt/homebrew/bin/brew shellenv)' >> ~/.zshrc
+        elif [ $(uname -m) == 'i386' ]; then
+            echo 'eval "$(/usr/local/bin/brew shellenv)"' >> ~/.zshrc
+        fi
     fi
 
     # Updating Homebrew and installing dependencies

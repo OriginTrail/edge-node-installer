@@ -7,7 +7,7 @@ EDGE_NODE_INSTALLER_DIR=$(pwd)
 if [ -f .env ]; then
   source .env
 else
-  echo "Config file not found!"
+  echo "Config file not found. Make sure you have configured your .env file!"
   exit 1
 fi
 
