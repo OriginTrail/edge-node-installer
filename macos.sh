@@ -112,14 +112,6 @@ setup() {
 
     # Start Redis
     brew install redis
-    sleep 3
- 
-    RESPONSE=`redis-cli ping`
-    if [ "$RESPONSE" = "PONG" ]; then
-        echo "Redis is up and running."
-    else
-        echo "Failed to receive PONG from Redis."
-    fi
 
     if ! command -v nvm &>/dev/null; then
         export NVM_DIR="$HOME/.nvm"
