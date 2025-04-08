@@ -23,7 +23,6 @@ mysql -u root -potnodedb -e "DROP DATABASE ka_mining_api_logging;"
 mysql -u root -potnodedb -e "DROP DATABASE airflow_db;"
 
 
-SERVER_IP="127.0.0.1"
 OS=$(uname -s)
 if [ "$OS" == "Linux" ]; then
     systemctl stop otnode.service && systemctl disable otnode.service
