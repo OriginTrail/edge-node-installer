@@ -103,9 +103,9 @@ setup() {
         /usr/bin/env bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
         if [ $(uname -m) == 'arm64' ]; then
-            echo 'eval "$(/opt/homebrew/bin/brew shellenv)' >> ~/.zshrc
+            eval "$(/opt/homebrew/bin/brew shellenv)"
         elif [ $(uname -m) == 'i386' ]; then
-            echo 'eval "$(/usr/local/bin/brew shellenv)"' >> ~/.zshrc
+            eval "$(/usr/local/bin/brew shellenv)"
         fi
     fi
 
