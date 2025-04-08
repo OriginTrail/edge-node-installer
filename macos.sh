@@ -97,7 +97,6 @@ install_otnode() {
 
 
 setup() {
-    # Install Homebrew if not installed
     if ! command -v brew &>/dev/null; then
         echo "❌ Brew must be installed to run this script."
     fi
