@@ -36,9 +36,11 @@ if [ "$OS" == "Linux" ]; then
     rm -rf /etc/systemd/system/ot-node.service
     rm -rf /etc/systemd/system/ka-mining-api.service
     rm -rf /etc/systemd/system/airflow-scheduler.service
-    rm -rf /etc/systemd/system/airflow-webserver.service
+    rm -rf service/etc/systemd/system/airflow-webserver.
     rm -rf /etc/systemd/system/drag-api.service
     rm -rf /etc/systemd/system/nginx.service
+
+    systemctl daemon-reload
 fi
 
 pkill -f blazegraph.jar
