@@ -68,7 +68,7 @@ install_mysql() {
     apt install tcllib mysql-server -y
 
     # Setup MySQL root user password
-    mysql -u root -proot -e "
+    mysql -u root -e "
         ALTER USER 'root'@'localhost'
         IDENTIFIED WITH caching_sha2_password
         BY '${DB_PASSWORD}';
