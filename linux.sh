@@ -220,8 +220,6 @@ UI_ENDPOINT=http://$SERVER_IP
 UI_SSL=false
 EOL
 
-        rm -rf node_modules package-lock.json
-        npm cache clean --force
         # Install dependencies
         nvm exec 22.9.0 npm install
 
@@ -322,8 +320,6 @@ RUNTIME_NODE_OPERATIONAL_DB_DIALECT=mysql
 UI_SSL=false
 EOL
 
-        rm -rf node_modules package-lock.json
-        npm cache clean --force
         # Install dependencies
         nvm exec 20.18.2 npm install
 
@@ -376,8 +372,6 @@ VITE_APP_ID=edge_node
 BASE_URL=http://$SERVER_IP
 EOL
 
-        rm -rf node_modules package-lock.json
-        npm cache clean --force
         # Build the UI
         nvm exec 22.9.0 npm install
         nvm exec 22.9.0 npm run build
@@ -423,8 +417,6 @@ UI_ENDPOINT="http://$SERVER_IP"
 OPENAI_API_KEY="$OPENAI_API_KEY"
 EOL
 
-        rm -rf node_modules package-lock.json
-        npm cache clean --force
         # Install dependencies
         nvm exec 22.9.0 npm install
 
