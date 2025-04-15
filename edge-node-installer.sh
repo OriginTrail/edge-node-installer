@@ -41,8 +41,8 @@ fi
 
 # If SERVER_EXTERNAL_IP and SERVER_EXTERNAL_IP differ, 
 # set SERVER_IP to SERVER_EXTERNAL_IP
-SERVER_EXTERNAL_IP=$(curl -s ifconfig.me)
-if [ "$SERVER_EXTERNAL_IP" != "$SERVER_IP" ]; then
+SERVER_EXTERNAL_IP=$(curl -4 ifconfig.me)
+if [ "$SERVER_EXTERNAL_IP" != "$SERVER_IP" ] && [ "$DEPLOYMENT_MODE" = "production" ]; then
     SERVER_IP="$SERVER_EXTERNAL_IP"
 fi
 
