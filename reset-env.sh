@@ -15,12 +15,12 @@ source ./common.sh
 
 rm -rf $EDGE_NODE_DIR
 
-mysql -u root -potnodedb -e "DROP DATABASE drag_logging;"
-mysql -u root -potnodedb -e "DROP DATABASE operationaldb;"
-mysql -u root -potnodedb -e "DROP DATABASE \`edge-node-auth-service\`;"
-mysql -u root -potnodedb -e "DROP DATABASE \`edge-node-api\`;"
-mysql -u root -potnodedb -e "DROP DATABASE ka_mining_api_logging;"
-mysql -u root -potnodedb -e "DROP DATABASE airflow_db;"
+mysql -u root -p$DB_PASSWORD -e "DROP DATABASE drag_logging;"
+mysql -u root -p$DB_PASSWORD -e "DROP DATABASE operationaldb;"
+mysql -u root -p$DB_PASSWORD -e "DROP DATABASE \`edge-node-auth-service\`;"
+mysql -u root -p$DB_PASSWORD -e "DROP DATABASE \`edge-node-api\`;"
+mysql -u root -p$DB_PASSWORD -e "DROP DATABASE ka_mining_api_logging;"
+mysql -u root -p$DB_PASSWORD -e "DROP DATABASE airflow_db;"
 
 
 OS=$(uname -s)
