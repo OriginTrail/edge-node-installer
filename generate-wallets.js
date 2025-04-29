@@ -3,7 +3,7 @@ import { Wallet } from "ethers";
 import fs from "fs";
 import path from "path";
 
-const PUBLISH_COUNT = 1;
+const PUBLISH_COUNT = 3;
 
 const INPUT   = "./.env";
 const BACKUP  = "./.env.backup";
