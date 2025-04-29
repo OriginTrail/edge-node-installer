@@ -25,10 +25,10 @@ function generateNodeName() {
 }
 
 if (!fs.existsSync(INPUT))
-  throw new Error(".env fajl nije pronađen – kreiraj ga pa ponovo pokreni skript.");
+  throw new Error(".env file doesn't exist — check if the previous step was done correctly");
 
 fs.copyFileSync(INPUT, BACKUP);
-console.log(`Postojeći .env je sačuvan kao ${path.basename(BACKUP)}`);
+console.log(`Old .env file saved as ${path.basename(BACKUP)}`);
 
 const make = label => {
   const w = Wallet.createRandom();
@@ -99,11 +99,11 @@ put(/GNOSIS_OPERATIONAL_KEY_PRIVATE_ADDRESS=.*/,
     `GNOSIS_OPERATIONAL_KEY_PRIVATE_ADDRESS=${extraWallets[5].privateKey}`);
 
 fs.writeFileSync(INPUT, envText);
-console.log(`.env je uspešno ažuriran (NODE_NAME = ${NODE_NAME})`);
+console.log(`.env updated correctly with generated wallets and node name: ${NODE_NAME}`);
 
 const dump = wallets.map(w =>
   `${w.label.toUpperCase()}\n  Address: ${w.address}\n  Private: ${w.privateKey}\n`
 ).join("\n");
 
 fs.writeFileSync(KEYS_OUT, dump);
-console.log(`Svi ključevi su upisani u ${KEYS_OUT}`);
+console.log(`Public addresses and private keys have been saved in ${KEYS_OUT}`);
