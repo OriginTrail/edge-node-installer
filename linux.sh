@@ -12,6 +12,8 @@ KA_MINING_API=$EDGE_NODE_DIR/ka-mining-api
 EDGE_NODE_API=$EDGE_NODE_DIR/edge-node-api
 EDGE_NODE_UI=/var/www/edge-node-ui
 
+export AIRFLOW_HOME="$EDGE_NODE_DIR/airflow"
+
 # Load the configuration variables
 if [ -f .env ]; then
     source .env
@@ -468,6 +470,7 @@ setup_ka_mining_api() {
         python3.11 -m venv .venv
         source .venv/bin/activate
         pip install -r requirements.txt
+        deactivate
 
         # Create the .env file with required variables
         cat <<EOL > $KA_MINING_API/.env
@@ -520,8 +523,6 @@ EOL
 setup_airflow_service() {
     echo "Setting up Airflow Service..."
 
-    export AIRFLOW_HOME="$EDGE_NODE_DIR/airflow"
-
     cd $KA_MINING_API
 
     # Initialize the Airflow database
@@ -544,7 +545,7 @@ setup_airflow_service() {
         -e 's|^max_active_runs_per_dag *=.*|max_active_runs_per_dag = 16|' \
         -e 's|^enable_xcom_pickling *=.*|enable_xcom_pickling = True|' \
         -e 's|^load_examples *=.*|load_examples = False|' \
-        $KA_MINING_API/airflow.cfg
+        $AIRFLOW_HOME/airflow.cfg
 
     # AIRFLOW WEBSERVER sytemctl setup
     cat <<EOL > /etc/systemd/system/airflow-webserver.service
@@ -556,6 +557,8 @@ After=network.target
 ExecStart=$KA_MINING_API/.venv/bin/airflow webserver --port 8008
 WorkingDirectory=$KA_MINING_API
 EnvironmentFile=$KA_MINING_API/.env
+Environment="PATH=$PATH:$KA_MINING_API/.venv/bin"
+Environment=AIRFLOW_HOME=$AIRFLOW_HOME
 Restart=always
 User=root
 Group=root
@@ -572,7 +575,8 @@ After=network.target
 [Service]
 ExecStart=$KA_MINING_API/.venv/bin/airflow scheduler
 WorkingDirectory=$KA_MINING_API
-Environment="PATH=$KA_MINING_API/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="PATH=$PATH:$KA_MINING_API/.venv/bin"
+Environment=AIRFLOW_HOME=$AIRFLOW_HOME
 Restart=always
 User=root
 Group=root
