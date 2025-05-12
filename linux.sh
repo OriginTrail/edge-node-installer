@@ -526,6 +526,7 @@ setup_airflow_service() {
     cd $KA_MINING_API
 
     # Initialize the Airflow database
+    source $KA_MINING_API/.venv/bin/activate
     airflow db init
 
     # Create Airflow admin user (TEMPORARY for internal use)
@@ -589,7 +590,7 @@ EOL
         # Unpause DAGS
         for dag_file in dags/*.py; do
             dag_name=$(basename "$dag_file" .py)
-            $KA_MINING_API/.venv/bin/airflow dags unpause "$dag_name"
+            airflow dags unpause "$dag_name"
         done
 
         systemctl daemon-reload
@@ -598,6 +599,9 @@ EOL
         systemctl enable airflow-scheduler
         systemctl start airflow-scheduler
     fi
+
+    # Deactivate the virtual environment
+    deactivate
 }
 
 finish_install() {
