@@ -414,7 +414,7 @@ setup_airflow_service() {
         -e "s|^max_active_runs_per_dag *=.*|max_active_runs_per_dag = 16|" \
         -e "s|^enable_xcom_pickling *=.*|enable_xcom_pickling = True|" \
         -e "s|^load_examples *=.*|load_examples = False|" \
-        "$AIRFLOW_HOME/airflow.cfg"
+        "$KA_MINING_API/airflow.cfg"
 
     # Unpause DAGS
     for dag_file in dags/*.py; do
