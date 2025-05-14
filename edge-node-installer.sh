@@ -59,7 +59,7 @@ source ./engine-node-config-generator.sh
 # Service repositories
 repos_keys=("edge_node_knowledge_mining" "edge_node_auth_service" "edge_node_drag" "edge_node_api" "edge_node_interface")
 repos_values=(
-  "${EDGE_NODE_KNOWLEDGE_MINING_REPO:-https://github.com/OriginTrail/edge-node-knowledge-mining}"
+  "${EDGE_NODE_KNOWLEDGE_MINING_REPO:-https://github.com/OriginTrail/edge-node-knowledge-mining-js}"
   "${EDGE_NODE_AUTH_SERVICE_REPO:-https://github.com/OriginTrail/edge-node-authentication-service}"
   "${EDGE_NODE_DRAG_REPO:-https://github.com/OriginTrail/edge-node-drag}"
   "${EDGE_NODE_API_REPO:-https://github.com/OriginTrail/edge-node-api}"
@@ -119,8 +119,7 @@ setup_auth_service && \
 setup_edge_node_api && \
 setup_edge_node_ui && \
 setup_drag_api && \
-setup_ka_mining_api && \
-setup_airflow_service
+setup_ka_mining_api 
 
 if [ "$DEPLOYMENT_MODE" = "production" ]; then
     finish_install
