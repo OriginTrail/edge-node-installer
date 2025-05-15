@@ -283,19 +283,19 @@ EOL
         fi
 
         static_dir=$(nginx -V 2>&1 | sed -n 's/.*--prefix=\([^ ]*\).*/\1/p' | grep -v '^$')
-        EDGE_NODE_UI_STATIC_DIR="${static_dir}/html/edge-node-ui"
+        EDGE_NODE_UI_STATIC_DIR="${static_dir}/html/edge-node-interface"
         mkdir -p $EDGE_NODE_UI_STATIC_DIR
 
         cp -R ${EDGE_NODE_UI}/dist/* $EDGE_NODE_UI_STATIC_DIR
 
-        EDGE_NODE_UI_NGINX_SITE="/opt/homebrew/etc/nginx/servers/edge-node-ui"
+        EDGE_NODE_UI_NGINX_SITE="/opt/homebrew/etc/nginx/servers/edge-node-interface"
 
 cat <<EOL > "$EDGE_NODE_UI_NGINX_SITE"
 server {
     listen 80;
     listen [::]:80;
 
-    root ${static_dir}/html/edge-node-ui;
+    root ${static_dir}/html/edge-node-interface;
     index index.html index.htm;
 
     error_log /opt/homebrew/var/log/nginx/server_error.log warn;

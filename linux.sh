@@ -389,7 +389,7 @@ EOL
         cp $NGINX_CONF ${NGINX_CONF}.bak
 
         # Modify the root directive to point to the new directory
-        sed -i 's|root /var/www/html;|root /var/www/edge-node-ui/dist;|' $NGINX_CONF
+        sed -i 's|root /var/www/html;|root /var/www/edge-node-interface/dist;|' $NGINX_CONF
         sed -i 's|try_files $uri $uri/ =404;|try_files $uri $uri/ /index.html =404;|' $NGINX_CONF
 
         # Enable and restart Nginx with the new configuration
