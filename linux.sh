@@ -494,7 +494,7 @@ Description=KA Mining API Service
 After=network.target
 
 [Service]
-ExecStart=$HOME/.nvm/versions/node/v22.9.0/bin/node $EDGE_NODE_API/app.js
+ExecStart=$HOME/.nvm/versions/node/v22.9.0/bin/node $KA_MINING_API/app.js
 WorkingDirectory=$KA_MINING_API
 EnvironmentFile=$KA_MINING_API/.env
 Restart=always
