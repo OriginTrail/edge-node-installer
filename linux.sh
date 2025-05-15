@@ -5,12 +5,12 @@ EDGE_NODE_DIR="$HOME/edge_node"
 OTNODE_DIR="$EDGE_NODE_DIR/ot-node"
 
 # Services
-AUTH_SERVICE=$EDGE_NODE_DIR/edge-node-auth-service
+AUTH_SERVICE=$EDGE_NODE_DIR/edge-node-authentication-service
 API=$EDGE_NODE_DIR/edge-node-api
-DRAG_API=$EDGE_NODE_DIR/drag-api
-KA_MINING_API=$EDGE_NODE_DIR/ka-mining-api
+DRAG_API=$EDGE_NODE_DIR/edge-node-drag
+KA_MINING_API=$EDGE_NODE_DIR/edge-node-knowledge-mining
 EDGE_NODE_API=$EDGE_NODE_DIR/edge-node-api
-EDGE_NODE_UI=/var/www/edge-node-ui
+EDGE_NODE_UI=/var/www/edge-node-interface
 
 # Load the configuration variables
 if [ -f .env ]; then
@@ -79,7 +79,6 @@ install_mysql() {
     mysql -u root -p"$DB_PASSWORD" -e "CREATE DATABASE \`edge-node-api\`;"
     mysql -u root -p"$DB_PASSWORD" -e "CREATE DATABASE drag_logging;"
     mysql -u root -p"$DB_PASSWORD" -e "CREATE DATABASE ka_mining_api_logging;"
-    mysql -u root -p"$DB_PASSWORD" -e "CREATE DATABASE airflow_db;"
 
     sed -i 's|max_binlog_size|#max_binlog_size|' /etc/mysql/mysql.conf.d/mysqld.cnf
     echo -e "disable_log_bin\nwait_timeout = 31536000\ninteractive_timeout = 31536000" >> /etc/mysql/mysql.conf.d/mysqld.cnf
@@ -191,7 +190,6 @@ setup() {
     ln -s $(which node) /usr/bin/ > /dev/null 2>&1
     ln -s $(which npm) /usr/bin/ > /dev/null 2>&1
 
-    install_python
     install_otnode
     install_blazegraph
     install_mysql
@@ -391,7 +389,7 @@ EOL
         cp $NGINX_CONF ${NGINX_CONF}.bak
 
         # Modify the root directive to point to the new directory
-        sed -i 's|root /var/www/html;|root /var/www/edge-node-ui/dist;|' $NGINX_CONF
+        sed -i 's|root /var/www/html;|root /var/www/edge-node-interface/dist;|' $NGINX_CONF
         sed -i 's|try_files $uri $uri/ =404;|try_files $uri $uri/ /index.html =404;|' $NGINX_CONF
 
         # Enable and restart Nginx with the new configuration
@@ -465,32 +463,30 @@ setup_ka_mining_api() {
         cd $KA_MINING_API
         git checkout main
 
-        python3.11 -m venv .venv
-        source .venv/bin/activate
-        pip install -r requirements.txt
-
         # Create the .env file with required variables
         cat <<EOL > $KA_MINING_API/.env
 PORT=5005
-PYTHON_ENV="STAGING"
-DB_USERNAME=$DB_USERNAME
-DB_PASSWORD=$DB_PASSWORD
-DB_HOST="127.0.0.1"
-DB_NAME="ka_mining_api_logging"
-DAG_FOLDER_NAME="$EDGE_NODE_DIR/ka-mining-api/dags"
-AUTH_ENDPOINT=http://$SERVER_IP:3001
-
+UI_ENDPOINT=http://$SERVER_IP
+AUTH_SERVICE_ENDPOINT=http://$SERVER_IP:3001
+KNOWLEDGE_MINING_QUEUE=knowledge-mining-queue
+KNOWLEDGE_MINING_CONCURRENCY=20
 OPENAI_API_KEY="$OPENAI_API_KEY"
-HUGGINGFACE_API_KEY="$HUGGINGFACE_API_KEY"
 UNSTRUCTURED_API_URL="$UNSTRUCTURED_API_URL"
-
-ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY"
-BIONTOLOGY_KEY="$BIONTOLOGY_KEY"
-MILVUS_USERNAME="$MILVUS_USERNAME"
-MILVUS_PASSWORD="$MILVUS_PASSWORD"
-MILVUS_URI="$MILVUS_URI"
+REDIS_PORT=6379
+REDIS_HOST=127.0.0.1
+REDIS_USERNAME=
+REDIS_PASSWORD=
+REDIS_DB=0
+ROUTES_PREFIX=/
+OTEL_ENABLED=false
+OTEL_SERVICE_NAME="edge-node-knowledge-mining"
 EOL
     fi
+
+    npm cache clean --force
+
+        # Install dependencies
+    nvm exec 20.18.2 npm install
 
     cat <<EOL > /etc/systemd/system/ka-mining-api.service
 [Unit]
@@ -498,7 +494,7 @@ Description=KA Mining API Service
 After=network.target
 
 [Service]
-ExecStart=$KA_MINING_API/.venv/bin/python $KA_MINING_API/app.py
+ExecStart=$HOME/.nvm/versions/node/v22.9.0/bin/node $KA_MINING_API/app.js
 WorkingDirectory=$KA_MINING_API
 EnvironmentFile=$KA_MINING_API/.env
 Restart=always
@@ -516,111 +512,25 @@ EOL
     fi
 }
 
-
-setup_airflow_service() {
-    echo "Setting up Airflow Service..."
-
-    export AIRFLOW_HOME="$EDGE_NODE_DIR/airflow"
-
-    cd $KA_MINING_API
-
-    # Initialize the Airflow database
-    airflow db init
-
-    # Create Airflow admin user (TEMPORARY for internal use)
-    airflow users create \
-        --role Admin \
-        --username airflow-administrator \
-        --email admin@example.com \
-        --firstname Administrator \
-        --lastname User \
-        --password admin_password
-
-    # Configure Airflow settings in the airflow.cfg file
-    sed -i \
-        -e 's|^dags_folder *=.*|dags_folder = '${KA_MINING_API}'/dags|' \
-        -e 's|^parallelism *=.*|parallelism = 32|' \
-        -e 's|^max_active_tasks_per_dag *=.*|max_active_tasks_per_dag = 16|' \
-        -e 's|^max_active_runs_per_dag *=.*|max_active_runs_per_dag = 16|' \
-        -e 's|^enable_xcom_pickling *=.*|enable_xcom_pickling = True|' \
-        -e 's|^load_examples *=.*|load_examples = False|' \
-        $KA_MINING_API/airflow.cfg
-
-    # AIRFLOW WEBSERVER sytemctl setup
-    cat <<EOL > /etc/systemd/system/airflow-webserver.service
-[Unit]
-Description=Airflow Webserver
-After=network.target
-
-[Service]
-ExecStart=$KA_MINING_API/.venv/bin/airflow webserver --port 8008
-WorkingDirectory=$KA_MINING_API
-EnvironmentFile=$KA_MINING_API/.env
-Restart=always
-User=root
-Group=root
-
-[Install]
-WantedBy=multi-user.target
-EOL
-
-    cat <<EOL > /etc/systemd/system/airflow-scheduler.service
-[Unit]
-Description=Airflow Scheduler
-After=network.target
-
-[Service]
-ExecStart=$KA_MINING_API/.venv/bin/airflow scheduler
-WorkingDirectory=$KA_MINING_API
-Environment="PATH=$KA_MINING_API/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-Restart=always
-User=root
-Group=root
-
-[Install]
-WantedBy=multi-user.target
-EOL
-
-    if [[ "${DEPLOYMENT_MODE,,}" = "production" ]]; then
-        # Unpause DAGS
-        for dag_file in dags/*.py; do
-            dag_name=$(basename "$dag_file" .py)
-            $KA_MINING_API/.venv/bin/airflow dags unpause "$dag_name"
-        done
-
-        systemctl daemon-reload
-        systemctl enable airflow-webserver
-        systemctl start airflow-webserver
-        systemctl enable airflow-scheduler
-        systemctl start airflow-scheduler
-    fi
-}
-
 finish_install() {
     echo "======== RESTARTING SERVICES ==========="
     sleep 10
     systemctl is-enabled otnode.service
     systemctl is-enabled ka-mining-api
-    systemctl is-enabled airflow-scheduler
-    systemctl is-enabled airflow-webserver
     systemctl is-enabled edge-node-api
     systemctl is-enabled auth-service
 
     systemctl restart otnode.service
     systemctl restart ka-mining-api
-    systemctl restart airflow-scheduler
-    systemctl restart airflow-webserver
     systemctl restart edge-node-api
     systemctl restart auth-service
 
     # ------- CHECK STATUSES OF ALL SERVICES -------
     systemctl status auth-service.service --no-pager || true
     systemctl status ka-mining-api.service --no-pager || true
-    systemctl status airflow-webserver --no-pager || true
-    systemctl status airflow-scheduler --no-pager || true
     systemctl status drag-api.service --no-pager || true
     systemctl status otnode --no-pager || true
 
-    echo "alias edge-node-restart='systemctl restart auth-service && systemctl restart edge-node-api && systemctl restart ka-mining-api && systemctl restart airflow-scheduler && systemctl restart drag-api'" >> ~/.bashrc
+    echo "alias edge-node-restart='systemctl restart auth-service && systemctl restart edge-node-api && systemctl restart ka-mining-api &&  systemctl restart drag-api'" >> ~/.bashrc
     source ~/.bashrc
 }

@@ -5,13 +5,12 @@ EDGE_NODE_DIR="$HOME/edge_node"
 OTNODE_DIR="$EDGE_NODE_DIR/ot-node"
 
 # Services
-AUTH_SERVICE="$EDGE_NODE_DIR/edge-node-auth-service"
-EDGE_NODE_API="$EDGE_NODE_DIR/edge-node-api"
-DRAG_API="$EDGE_NODE_DIR/drag-api"
-KA_MINING_API="$EDGE_NODE_DIR/ka-mining-api"
-EDGE_NODE_API="$EDGE_NODE_DIR/edge-node-api"
-EDGE_NODE_UI="$EDGE_NODE_DIR/edge-node-ui"
-
+AUTH_SERVICE=$EDGE_NODE_DIR/edge-node-authentication-service
+API=$EDGE_NODE_DIR/edge-node-api
+DRAG_API=$EDGE_NODE_DIR/edge-node-drag
+KA_MINING_API=$EDGE_NODE_DIR/edge-node-knowledge-mining
+EDGE_NODE_API=$EDGE_NODE_DIR/edge-node-api
+EDGE_NODE_UI=/var/www/edge-node-interface
 
 install_blazegraph() {
     BLAZEGRAPH="$OTNODE_DIR/blazegraph"
@@ -39,7 +38,6 @@ install_mysql() {
     mysql -u root -p"$DB_PASSWORD" -e "CREATE DATABASE \`edge-node-api\`;"
     mysql -u root -p"$DB_PASSWORD" -e "CREATE DATABASE drag_logging;"
     mysql -u root -p"$DB_PASSWORD" -e "CREATE DATABASE ka_mining_api_logging;"
-    mysql -u root -p"$DB_PASSWORD" -e "CREATE DATABASE airflow_db;"
 
 
     # NOTE:
@@ -129,7 +127,6 @@ setup() {
     nvm use 20.18.2
     nvm alias default 20.18.2
 
-    install_python
     install_otnode
     install_blazegraph
     install_mysql
@@ -286,19 +283,19 @@ EOL
         fi
 
         static_dir=$(nginx -V 2>&1 | sed -n 's/.*--prefix=\([^ ]*\).*/\1/p' | grep -v '^$')
-        EDGE_NODE_UI_STATIC_DIR="${static_dir}/html/edge-node-ui"
+        EDGE_NODE_UI_STATIC_DIR="${static_dir}/html/edge-node-interface"
         mkdir -p $EDGE_NODE_UI_STATIC_DIR
 
         cp -R ${EDGE_NODE_UI}/dist/* $EDGE_NODE_UI_STATIC_DIR
 
-        EDGE_NODE_UI_NGINX_SITE="/opt/homebrew/etc/nginx/servers/edge-node-ui"
+        EDGE_NODE_UI_NGINX_SITE="/opt/homebrew/etc/nginx/servers/edge-node-interface"
 
 cat <<EOL > "$EDGE_NODE_UI_NGINX_SITE"
 server {
     listen 80;
     listen [::]:80;
 
-    root ${static_dir}/html/edge-node-ui;
+    root ${static_dir}/html/edge-node-interface;
     index index.html index.htm;
 
     error_log /opt/homebrew/var/log/nginx/server_error.log warn;
@@ -359,66 +356,27 @@ setup_ka_mining_api() {
         cd "$KA_MINING_API"
         git checkout main
 
-        python3 -m venv .venv
-        source .venv/bin/activate
-        pip install -r requirements.txt
-
         # Create the .env file with required variables
         cat <<EOL > "$KA_MINING_API/.env"
 PORT=5005
-PYTHON_ENV="STAGING"
-DB_USERNAME=$DB_USERNAME
-DB_PASSWORD=$DB_PASSWORD
-DB_HOST="127.0.0.1"
-DB_NAME="ka_mining_api_logging"
-DAG_FOLDER_NAME="$KA_MINING_API/dags"
-AUTH_ENDPOINT=http://$SERVER_IP:3001
-
+UI_ENDPOINT=http://$SERVER_IP
+AUTH_SERVICE_ENDPOINT=http://$SERVER_IP:3001
+KNOWLEDGE_MINING_QUEUE=knowledge-mining-queue
+KNOWLEDGE_MINING_CONCURRENCY=20
 OPENAI_API_KEY="$OPENAI_API_KEY"
-HUGGINGFACE_API_KEY="$HUGGINGFACE_API_KEY"
 UNSTRUCTURED_API_URL="$UNSTRUCTURED_API_URL"
-
-ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY"
-BIONTOLOGY_KEY="$BIONTOLOGY_KEY"
-MILVUS_USERNAME="$MILVUS_USERNAME"
-MILVUS_PASSWORD="$MILVUS_PASSWORD"
-MILVUS_URI="$MILVUS_URI"
+REDIS_PORT=6379
+REDIS_HOST=127.0.0.1
+REDIS_USERNAME=
+REDIS_PASSWORD=
+REDIS_DB=0
+ROUTES_PREFIX=/
+OTEL_ENABLED=false
+OTEL_SERVICE_NAME="edge-node-knowledge-mining"
 EOL
     fi
-}
 
-setup_airflow_service() {
-    echo "Setting up Airflow Service on macOS..."
-
-    export AIRFLOW_HOME="$EDGE_NODE_DIR/airflow"
-
-    cd "$KA_MINING_API"
-
-    # Initialize the Airflow database
-    airflow db init
-
-    # Create Airflow admin user (TEMPORARY for internal use)
-    airflow users create \
-        --role Admin \
-        --username airflow-administrator \
-        --email admin@example.com \
-        --firstname Administrator \
-        --lastname User \
-        --password admin_password
-
-    # Configure Airflow settings in the airflow.cfg file
-    sed -i '' \
-        -e "s|^dags_folder *=.*|dags_folder = $KA_MINING_API/dags|" \
-        -e "s|^parallelism *=.*|parallelism = 32|" \
-        -e "s|^max_active_tasks_per_dag *=.*|max_active_tasks_per_dag = 16|" \
-        -e "s|^max_active_runs_per_dag *=.*|max_active_runs_per_dag = 16|" \
-        -e "s|^enable_xcom_pickling *=.*|enable_xcom_pickling = True|" \
-        -e "s|^load_examples *=.*|load_examples = False|" \
-        "$KA_MINING_API/airflow.cfg"
-
-    # Unpause DAGS
-    for dag_file in dags/*.py; do
-        dag_name=$(basename "$dag_file" .py)
-        "$KA_MINING_API/.venv/bin/airflow" dags unpause "$dag_name"
-    done
+    rm -rf node_modules package-lock.json
+    npm cache clean --force
+    nvm exec 22.9.0 npm install
 }
